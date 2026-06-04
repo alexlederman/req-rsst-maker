@@ -155,7 +155,8 @@ def add_patient():
     if not identifier:
         abort(400)
     patients = load_patients()
-    patient = {'id': str(int(time.time() * 1000)), 'identifier': identifier}
+    initials = (data.get('initials') or '').strip()
+    patient = {'id': str(int(time.time() * 1000)), 'identifier': identifier, 'initials': initials}
     patients.append(patient)
     save_patients(patients)
     return jsonify(patient), 201

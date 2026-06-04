@@ -335,6 +335,19 @@
     }
     .field-textarea::placeholder { color: #c4c0b8; }
     .field-textarea:focus { border-color: var(--req); background: var(--surface); }
+    .field-textarea.mirror-val {
+      background: none;
+      border: none;
+      border-bottom: 1px solid var(--border);
+      border-radius: 0;
+      padding: 6px 0 5px;
+      resize: none;
+      overflow: hidden;
+      cursor: default;
+      color: var(--muted);
+      min-height: unset;
+      height: auto;
+    }
 
     /* Divider inside card */
     .card-divider {
@@ -381,6 +394,79 @@
       line-height: 1;
     }
 
+    /* ── Modal ───────────────────────────────────────────────────────────── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(17,35,69,.35);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface);
+      border-radius: 6px;
+      box-shadow: var(--shadow);
+      width: 380px;
+      overflow: hidden;
+      animation: card-in .2s ease both;
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px 12px;
+      border-bottom: 1px solid var(--border-light);
+    }
+    .modal-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 20px;
+      color: var(--muted);
+      cursor: pointer;
+      line-height: 1;
+      padding: 0 2px;
+    }
+    .modal-close:hover { color: var(--text); }
+    .modal-body { padding: 20px 20px 8px; }
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 12px 20px 20px;
+    }
+    .btn-modal-cancel {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 7px 14px;
+      font-family: var(--sans);
+      font-size: 13px;
+      cursor: pointer;
+      color: var(--muted);
+    }
+    .btn-modal-cancel:hover { background: var(--bg); }
+    .btn-modal-save {
+      background: var(--fh-teal);
+      border: none;
+      border-radius: 6px;
+      padding: 7px 16px;
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      color: var(--fh-white);
+      transition: opacity .15s;
+    }
+    .btn-modal-save:hover { opacity: .88; }
+
     /* ── Toast ────────────────────────────────────────────────────────── */
     .toast {
       position: fixed;
@@ -421,7 +507,7 @@
     <select class="patient-select" id="patient-sel" onchange="selectPatient()">
       <option value="">— select patient —</option>
     </select>
-    <button class="btn-patient-save" id="save-patient-btn" onclick="savePatient()" title="Save current patient identifier">+ Save</button>
+    <button class="btn-patient-save" onclick="openNewPatientModal()" title="Add a new patient">+ New Patient</button>
     <button class="btn-patient-delete" id="del-patient-btn" onclick="deletePatient()" title="Remove selected patient" disabled>Remove</button>
   </div>
   <button class="btn-generate" id="gen-btn" onclick="generateAll()">
@@ -462,6 +548,30 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- New Patient Modal -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeNewPatientModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title">New Patient</span>
+      <button class="modal-close" onclick="closeNewPatientModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <div class="field-label">Initials</div>
+        <input class="field-input" type="text" id="new-patient-initials" placeholder="e.g. JD" autocomplete="off">
+      </div>
+      <div class="field">
+        <div class="field-label">Patient Identifier</div>
+        <textarea class="field-textarea" id="new-patient-identifier" placeholder="MRN&#10;DOB: AGE M/F&#10;&#10;NAME"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-modal-cancel" onclick="closeNewPatientModal()">Cancel</button>
+      <button class="btn-modal-save" onclick="saveNewPatient()">Save Patient</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // ── Server data ────────────────────────────────────────────────────────────
@@ -538,8 +648,14 @@ function makeField(label, inputEl, badgeHtml) {
 // ── Patient database ──────────────────────────────────────────────────────
 let patients = [];
 
-function patientLabel(identifier) {
-  return identifier.split('\n')[0].trim() || 'Unknown';
+function fitTextarea(ta) {
+  ta.style.height = 'auto';
+  ta.style.height = ta.scrollHeight + 'px';
+}
+
+function patientLabel(patient) {
+  const mrn = (patient.identifier || '').split('\n')[0].trim() || 'Unknown';
+  return patient.initials ? `${patient.initials} — ${mrn}` : mrn;
 }
 
 function renderPatientSelect() {
@@ -547,7 +663,7 @@ function renderPatientSelect() {
   const cur = sel.value;
   sel.innerHTML = `<option value="">— select patient —</option>`;
   patients.forEach(p => {
-    const o = new Option(patientLabel(p.identifier), p.id);
+    const o = new Option(patientLabel(p), p.id);
     sel.appendChild(o);
   });
   sel.value = cur;
@@ -569,33 +685,42 @@ function selectPatient() {
   if (!patient) return;
 
   const identifier = patient.identifier;
-  const mrn = patientLabel(identifier);  // first line
+  const mrn = (identifier.split('\n')[0] || '').trim();
 
-  // Fill MRN in RSST card
+  // Fill MRN and Subject Initials in RSST card
   const mrnInp = document.getElementById('rsst-mrn');
   if (mrnInp) mrnInp.value = mrn;
+  const initialsInp = document.getElementById('rsst-subject_initials');
+  if (initialsInp) initialsInp.value = patient.initials || '';
 
   // Fill Patient Identifier in all Req cards
   document.querySelectorAll('.card.req-card').forEach(card => {
     const cid = card.id.replace('card-', '');
     const ta  = document.getElementById(`pid-${cid}`);
-    if (ta) ta.value = identifier;
+    if (ta) { ta.value = identifier; fitTextarea(ta); }
   });
 }
 
-async function savePatient() {
-  // Read identifier from the first req card
-  const firstReq = document.querySelector('.card.req-card');
-  if (!firstReq) { toast('Add a Req card first.'); return; }
-  const cid = firstReq.id.replace('card-', '');
-  const ta  = document.getElementById(`pid-${cid}`);
-  const identifier = (ta ? ta.value : '').trim();
-  if (!identifier) { toast('Enter a patient identifier in the Req card first.'); return; }
+function openNewPatientModal() {
+  document.getElementById('new-patient-initials').value = '';
+  document.getElementById('new-patient-identifier').value = '';
+  document.getElementById('modal-overlay').classList.add('open');
+  document.getElementById('new-patient-initials').focus();
+}
+
+function closeNewPatientModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+async function saveNewPatient() {
+  const initials   = document.getElementById('new-patient-initials').value.trim();
+  const identifier = document.getElementById('new-patient-identifier').value.trim();
+  if (!identifier) { toast('Patient identifier is required.'); return; }
 
   const resp = await fetch('/patients', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ identifier }),
+    body: JSON.stringify({ identifier, initials }),
   });
   if (!resp.ok) { toast('Failed to save patient.'); return; }
   const patient = await resp.json();
@@ -603,14 +728,15 @@ async function savePatient() {
   renderPatientSelect();
   document.getElementById('patient-sel').value = patient.id;
   document.getElementById('del-patient-btn').disabled = false;
-  toast(`Patient saved: ${patientLabel(identifier)}`);
+  closeNewPatientModal();
+  toast(`Patient saved: ${patientLabel(patient)}`);
 }
 
 async function deletePatient() {
   const sel = document.getElementById('patient-sel');
   const pid = sel.value;
   if (!pid) return;
-  const label = patientLabel(patients.find(p => p.id === pid)?.identifier || '');
+  const label = patientLabel(patients.find(p => p.id === pid) || {});
   const resp = await fetch(`/patients/${pid}`, { method: 'DELETE' });
   if (!resp.ok) { toast('Failed to remove patient.'); return; }
   patients = patients.filter(p => p.id !== pid);
@@ -639,18 +765,45 @@ function init() {
       inp.value = TODAY;
       inp.disabled = true;
       body.appendChild(makeField(f.label, inp, ''));
+    } else if (f.dateInput) {
+      // Formatted text display + hidden date picker overlay
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'position:relative';
+
+      const display = document.createElement('input');
+      display.type = 'text';
+      display.className = 'field-input';
+      display.id = `rsst-${f.id}`;
+      display.readOnly = true;
+      display.placeholder = 'Select date';
+      display.style.cursor = 'pointer';
+
+      const picker = document.createElement('input');
+      picker.type = 'date';
+      picker.style.cssText = 'position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;z-index:1';
+      picker.tabIndex = -1;
+
+      picker.addEventListener('change', () => {
+        display.value = picker.value ? formatDateMDY(picker.value) : '';
+        updateMirrors(f.id);
+      });
+      display.addEventListener('click', () => {
+        try { picker.showPicker(); } catch(e) { picker.click(); }
+      });
+
+      wrap.appendChild(display);
+      wrap.appendChild(picker);
+      body.appendChild(makeField(f.label, wrap, ''));
     } else {
       inp = document.createElement('input');
-      inp.type = f.dateInput ? 'date' : f.timeInput ? 'time' : 'text';
+      inp.type = f.timeInput ? 'time' : 'text';
       inp.className = 'field-input';
       inp.id = `rsst-${f.id}`;
       inp.placeholder = ' ';
       if (f.shared) {
         inp.addEventListener('input', () => updateMirrors(f.id));
-        body.appendChild(makeField(f.label, inp, ''));
-      } else {
-        body.appendChild(makeField(f.label, inp, ''));
       }
+      body.appendChild(makeField(f.label, inp, ''));
     }
   });
 
@@ -723,9 +876,10 @@ function addReqCard(defaultTmpl) {
 
   // Patient Identifier textarea
   const pidTa = document.createElement('textarea');
-  pidTa.className = 'field-textarea';
+  pidTa.className = 'field-textarea mirror-val';
   pidTa.id = `pid-${cid}`;
-  pidTa.placeholder = 'MRN / DOB / Name…';
+  pidTa.readOnly = true;
+  pidTa.placeholder = 'Select a patient above';
   body.appendChild(makeField('Patient Identifier', pidTa, ''));
 
   // Divider
@@ -771,7 +925,7 @@ function onReqTmpl(cid) {
   const raw     = prefill[REQ_PDF.patient_identifier] || '';
   const val     = raw.replace(/\r/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
   const ta      = document.getElementById(`pid-${cid}`);
-  if (ta) ta.value = val;
+  if (ta) { ta.value = val; fitTextarea(ta); }
 }
 
 // ── Generate ───────────────────────────────────────────────────────────────
@@ -785,8 +939,7 @@ async function generateAll() {
   ['collection_date','collection_time','study_subject_id','subject_initials','mrn'].forEach(fid => {
     const inp = document.getElementById(`rsst-${fid}`);
     if (!inp) return;
-    let v = inp.value.trim();
-    if (inp.type === 'date' && v) v = formatDateMDY(v);
+    const v = inp.value.trim();
     if (v) rsstFields[fid] = v;
   });
 
