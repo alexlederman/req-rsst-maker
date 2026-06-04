@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ pdf_name }} - Single Fill{% endblock %}
+{% block content %}
+<a href="/" class="back-link">← Back</a>
+<div class="card">
+  <h2>{{ pdf_name }} — Single Fill</h2>
+  {% if not fields %}
+    <p>No fillable fields found in this PDF.</p>
+  {% else %}
+  <form method="POST" action="/single/{{ pdf_name }}">
+    <div class="fields-grid">
+      {% for field_name, field_type in fields.items() %}
+        <div class="field-row">
+          {% if field_type == "checkbox" %}
+            <div class="checkbox-row">
+              <input type="checkbox" id="field_{{ field_name }}" name="field_{{ field_name }}" value="yes">
+              <label for="field_{{ field_name }}">{{ field_name }}</label>
+            </div>
+          {% else %}
+            <label for="field_{{ field_name }}">{{ field_name }}</label>
+            <input type="text" id="field_{{ field_name }}" name="field_{{ field_name }}">
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+    <div style="margin-top: 24px;">
+      <button type="submit" class="btn btn-primary">Generate PDF</button>
+    </div>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

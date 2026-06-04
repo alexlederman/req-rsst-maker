@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}{{ pdf_name }} - Batch Fill{% endblock %}
+{% block content %}
+<a href="/" class="back-link">← Back</a>
+
+{% if step == "upload" %}
+<div class="card">
+  <h2>{{ pdf_name }} — Batch Fill</h2>
+  <p style="margin-bottom: 20px; color: #555; font-size: 14px;">
+    Upload a CSV file. Each row will produce one filled PDF. Column names matching form fields will be mapped automatically.
+  </p>
+  <form method="POST" action="/batch/{{ pdf_name }}/map" enctype="multipart/form-data">
+    <div class="field-row">
+      <label for="csv_file">CSV File</label>
+      <input type="file" id="csv_file" name="csv_file" accept=".csv">
+    </div>
+    <div style="margin-top: 20px;">
+      <button type="submit" class="btn btn-primary">Next: Map Columns</button>
+    </div>
+  </form>
+</div>
+
+{% elif step == "map" %}
+<div class="card">
+  <h2>{{ pdf_name }} — Map CSV Columns to Form Fields</h2>
+  <p style="margin-bottom: 20px; color: #555; font-size: 14px;">
+    Review the automatic column mapping below. Adjust any dropdowns as needed, then click Generate.
+  </p>
+  <form method="POST" action="/batch/{{ pdf_name }}/generate">
+    <input type="hidden" name="token" value="{{ token }}">
+    <table class="mapping-table">
+      <thead>
+        <tr>
+          <th>PDF Field</th>
+          <th>Type</th>
+          <th>CSV Column</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for field_name, field_type in fields.items() %}
+        <tr>
+          <td>{{ field_name }}</td>
+          <td>
+            {% if field_type == "checkbox" %}
+              <span class="tag tag-checkbox">checkbox</span>
+            {% else %}
+              <span class="tag tag-text">text</span>
+            {% endif %}
+          </td>
+          <td>
+            <select name="map_{{ field_name }}">
+              <option value="">-- skip --</option>
+              {% for col in csv_headers %}
+                <option value="{{ col }}" {% if auto_mapping.get(field_name) == col %}selected{% endif %}>{{ col }}</option>
+              {% endfor %}
+            </select>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div style="margin-top: 24px;">
+      <button type="submit" class="btn btn-primary">Generate PDFs (ZIP)</button>
+      <a href="/batch/{{ pdf_name }}" class="btn btn-secondary" style="margin-left: 8px;">Start Over</a>
+    </div>
+  </form>
+</div>
+{% endif %}
+
+{% endblock %}

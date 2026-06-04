@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lab Form Filler</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:         #eeece7;
+      --surface:    #ffffff;
+      --border:     #dedad2;
+      --border-light: #eeece7;
+      --text:       #1c1a17;
+      --muted:      #9b9690;
+      --rsst:       #1c3d6e;
+      --rsst-soft:  #e8eff9;
+      --req:        #1a5c42;
+      --req-soft:   #e5f4ed;
+      --action:     #1c3d6e;
+      --action-fg:  #ffffff;
+      --danger:     #c0392b;
+      --shadow-sm:  0 1px 2px rgba(0,0,0,.06), 0 2px 8px rgba(0,0,0,.06);
+      --shadow:     0 2px 4px rgba(0,0,0,.06), 0 6px 20px rgba(0,0,0,.07);
+      --radius:     14px;
+      --mono:       'DM Mono', ui-monospace, monospace;
+      --sans:       'DM Sans', system-ui, sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    /* ── Toolbar ──────────────────────────────────────────────────────── */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+      padding: 0 24px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      z-index: 10;
+    }
+
+    .app-wordmark {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+    .app-wordmark-title {
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      color: var(--text);
+    }
+    .app-wordmark-sub {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 300;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .btn-generate {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--action);
+      color: var(--action-fg);
+      border: none;
+      border-radius: 8px;
+      padding: 9px 20px;
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      letter-spacing: 0.01em;
+      transition: opacity .15s, transform .1s;
+    }
+    .btn-generate:hover { opacity: .88; }
+    .btn-generate:active { transform: scale(.98); }
+    .btn-generate:disabled { opacity: .4; cursor: default; transform: none; }
+    .btn-generate svg { flex-shrink: 0; }
+
+    /* ── Cards scroll container ───────────────────────────────────────── */
+    .canvas {
+      height: calc(100vh - 56px);
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 28px 28px 40px;
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    /* ── Card ─────────────────────────────────────────────────────────── */
+    .card {
+      flex-shrink: 0;
+      width: 288px;
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      animation: card-in .25s ease both;
+    }
+    @keyframes card-in {
+      from { opacity: 0; transform: translateY(12px) scale(.98); }
+      to   { opacity: 1; transform: none; }
+    }
+
+
+    /* ── Card header ──────────────────────────────────────────────────── */
+    .card-header {
+      padding: 14px 16px 12px;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .card-header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .card-badge {
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+    .rsst-card .card-badge { background: var(--rsst-soft); color: var(--rsst); }
+    .req-card  .card-badge { background: var(--req-soft);  color: var(--req); }
+
+    .card-remove {
+      background: none;
+      border: none;
+      color: var(--border);
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0 2px;
+      transition: color .15s;
+    }
+    .card-remove:hover { color: var(--danger); }
+
+    .field-tmpl select {
+      width: 100%;
+      appearance: none;
+      -webkit-appearance: none;
+      background: var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7' viewBox='0 0 12 7'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239b9690' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 10px center;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 7px 28px 7px 10px;
+      font-family: var(--sans);
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--text);
+      cursor: pointer;
+      outline: none;
+      transition: border-color .15s;
+    }
+    .field-tmpl select:focus { border-color: var(--rsst); }
+    .req-card .field-tmpl select:focus { border-color: var(--req); }
+
+    .card-name-input {
+      width: 100%;
+      margin-top: 8px;
+      background: none;
+      border: none;
+      border-bottom: 1px solid transparent;
+      padding: 4px 0 3px;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 0.03em;
+      color: var(--muted);
+      outline: none;
+      transition: border-color .2s, color .2s;
+    }
+    .card-name-input:hover { border-color: var(--border); }
+    .card-name-input:focus { border-color: var(--rsst); color: var(--text); }
+    .req-card .card-name-input:focus { border-color: var(--req); }
+
+    /* ── Card body ────────────────────────────────────────────────────── */
+    .card-body {
+      padding: 16px 16px 20px;
+    }
+
+    .field {
+      margin-bottom: 16px;
+    }
+    .field:last-child { margin-bottom: 0; }
+
+    .field-label {
+      font-family: var(--mono);
+      font-size: 9.5px;
+      font-weight: 400;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .field-label .badge-shared {
+      font-size: 8px;
+      letter-spacing: 0.06em;
+      background: #f0e8ff;
+      color: #6b3fa0;
+      border-radius: 3px;
+      padding: 1px 5px;
+    }
+    .field-label .badge-auto {
+      font-size: 8px;
+      letter-spacing: 0.06em;
+      background: #fff3d6;
+      color: #8a5c00;
+      border-radius: 3px;
+      padding: 1px 5px;
+    }
+    .field-label .badge-mirror {
+      font-size: 8px;
+      letter-spacing: 0.06em;
+      background: #f0e8e8;
+      color: #7a3a3a;
+      border-radius: 3px;
+      padding: 1px 5px;
+    }
+
+    .field-input {
+      display: block;
+      width: 100%;
+      background: none;
+      border: none;
+      border-bottom: 1px solid var(--border);
+      padding: 6px 0 5px;
+      font-family: var(--sans);
+      font-size: 13.5px;
+      font-weight: 400;
+      color: var(--text);
+      outline: none;
+      transition: border-color .2s;
+    }
+    .field-input::placeholder { color: #c4c0b8; }
+    .field-input:focus { border-color: var(--rsst); }
+    .req-card .field-input:focus { border-color: var(--req); }
+
+    .field-input.auto-val {
+      color: var(--muted);
+      pointer-events: none;
+    }
+
+    .field-input.mirror-val {
+      color: var(--muted);
+      pointer-events: none;
+    }
+    .field-input.mirror-val::placeholder { color: #ccc; }
+
+    .field-textarea {
+      display: block;
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--text);
+      outline: none;
+      resize: vertical;
+      min-height: 72px;
+      transition: border-color .2s;
+      line-height: 1.5;
+    }
+    .field-textarea::placeholder { color: #c4c0b8; }
+    .field-textarea:focus { border-color: var(--req); background: var(--surface); }
+
+    /* Divider inside card */
+    .card-divider {
+      border: none;
+      border-top: 1px solid var(--border-light);
+      margin: 16px 0;
+    }
+
+    /* ── Add-Req card (ghost) ─────────────────────────────────────────── */
+    .card-add {
+      flex-shrink: 0;
+      width: 200px;
+      min-height: 120px;
+      background: none;
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+      color: var(--muted);
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 500;
+      align-self: stretch;
+    }
+    .card-add:hover {
+      border-color: var(--req);
+      color: var(--req);
+      background: var(--req-soft);
+    }
+    .card-add-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 1.5px dashed currentColor;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    /* ── Toast ────────────────────────────────────────────────────────── */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(8px);
+      background: #1c1a17;
+      color: #f5f3ef;
+      padding: 9px 22px;
+      border-radius: 100px;
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: 0.02em;
+      display: none;
+      z-index: 100;
+      box-shadow: 0 4px 20px rgba(0,0,0,.25);
+      animation: none;
+    }
+    .toast.show {
+      display: block;
+      animation: toast-in .2s ease both;
+    }
+    @keyframes toast-in {
+      from { opacity: 0; transform: translateX(-50%) translateY(16px); }
+      to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Toolbar ──────────────────────────────────────────────────────────── -->
+<div class="toolbar">
+  <div class="app-wordmark">
+    <span class="app-wordmark-title">Lab Form Filler</span>
+    <span class="app-wordmark-sub">Fred Hutch</span>
+  </div>
+  <button class="btn-generate" id="gen-btn" onclick="generateAll()">
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M7 1v8M4 6l3 3 3-3M2 10v1a1 1 0 001 1h8a1 1 0 001-1v-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    Generate PDFs
+  </button>
+</div>
+
+<!-- ── Canvas ────────────────────────────────────────────────────────────── -->
+<div class="canvas" id="canvas">
+  <!-- RSST card (fixed) -->
+  <div class="card rsst-card" id="rsst-card">
+    <div class="card-header">
+      <div class="card-header-top">
+        <span class="card-badge">RSST</span>
+      </div>
+      <div class="field-tmpl">
+        <select id="rsst-tmpl" onchange="onRsstTmpl()">
+          <option value="">— select template —</option>
+        </select>
+      </div>
+    </div>
+    <div class="card-body" id="rsst-body">
+      <!-- fields injected by init() -->
+    </div>
+  </div>
+
+  <!-- Req cards injected here by addReqCard() -->
+
+  <!-- Add Req button -->
+  <button class="card-add" id="add-req-btn" onclick="addReqCard()">
+    <div class="card-add-icon">+</div>
+    <span>Add Req</span>
+  </button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Server data ────────────────────────────────────────────────────────────
+const RSST_FILES   = {{ rsst_files_json | safe }};
+const REQ_FILES    = {{ req_files_json | safe }};
+const RSST_PREFILL = {{ rsst_prefills_json | safe }};
+const REQ_PREFILL  = {{ req_prefills_json | safe }};
+
+const TODAY = (() => {
+  const d = new Date();
+  return `${d.getMonth()+1}/${d.getDate()}/${String(d.getFullYear()).slice(-2)}`;
+})();
+
+// PDF field names — must mirror app.py RSST_MAP / REQ_MAP
+const RSST_PDF = { study_subject_id: 'Study-Subject-ID' };
+const REQ_PDF  = { patient_identifier: 'Patient Indentifiers' };
+
+// RSST field definitions
+const RSST_FIELDS = [
+  { id: 'collection_date',  label: 'Collection Date',  shared: true,  dateInput: true },
+  { id: 'collection_time',  label: 'Collection Time',  shared: false, timeInput: true },
+  { id: 'study_subject_id', label: 'Study Subject ID', shared: true,  prefill: true },
+  { id: 'subject_initials', label: 'Subject Initials', shared: false },
+  { id: 'mrn',              label: 'MRN',              shared: false },
+  { id: 'date_submitted',   label: 'Date Submitted',   shared: false, auto: true },
+];
+
+let reqCount = 0;
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function toast(msg, ms = 3500) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.remove('show');
+  void el.offsetWidth;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), ms);
+}
+
+function getRsstVal(fid) {
+  const el = document.getElementById(`rsst-${fid}`);
+  return el ? el.value : '';
+}
+
+function formatDateMDY(yyyymmdd) {
+  if (!yyyymmdd) return '';
+  const [y, m, d] = yyyymmdd.split('-');
+  return `${parseInt(m)}/${parseInt(d)}/${y.slice(-2)}`;
+}
+
+function updateMirrors(fid) {
+  const inp = document.getElementById(`rsst-${fid}`);
+  if (!inp) return;
+  const val = inp.type === 'date' ? formatDateMDY(inp.value) : inp.value;
+  document.querySelectorAll(`.mirror-${fid}`).forEach(el => { el.value = val; });
+}
+
+function makeMirrorLabel(text) {
+  return `${text} <span class="badge-mirror">from RSST</span>`;
+}
+
+function makeField(label, inputEl, badgeHtml) {
+  const wrap = document.createElement('div');
+  wrap.className = 'field';
+  const lbl = document.createElement('div');
+  lbl.className = 'field-label';
+  lbl.innerHTML = label + (badgeHtml || '');
+  wrap.appendChild(lbl);
+  wrap.appendChild(inputEl);
+  return wrap;
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+function init() {
+  // Populate RSST dropdown
+  const sel = document.getElementById('rsst-tmpl');
+  RSST_FILES.forEach(f => {
+    const o = new Option(f.replace(/\.pdf$/i, ''), f);
+    sel.appendChild(o);
+  });
+  if (RSST_FILES.length === 1) { sel.value = RSST_FILES[0]; }
+
+  // Build RSST field inputs
+  const body = document.getElementById('rsst-body');
+  RSST_FIELDS.forEach(f => {
+    let inp;
+    if (f.auto) {
+      inp = document.createElement('input');
+      inp.type = 'text';
+      inp.className = 'field-input auto-val';
+      inp.value = TODAY;
+      inp.disabled = true;
+      body.appendChild(makeField(f.label, inp, ''));
+    } else {
+      inp = document.createElement('input');
+      inp.type = f.dateInput ? 'date' : f.timeInput ? 'time' : 'text';
+      inp.className = 'field-input';
+      inp.id = `rsst-${f.id}`;
+      inp.placeholder = ' ';
+      if (f.shared) {
+        inp.addEventListener('input', () => updateMirrors(f.id));
+        body.appendChild(makeField(f.label, inp, ''));
+      } else {
+        body.appendChild(makeField(f.label, inp, ''));
+      }
+    }
+  });
+
+  if (RSST_FILES.length === 1) onRsstTmpl();
+
+  // Start with one Req card
+  addReqCard(REQ_FILES.length === 1 ? REQ_FILES[0] : '');
+}
+
+// ── RSST template change ───────────────────────────────────────────────────
+function onRsstTmpl() {
+  const tmpl    = document.getElementById('rsst-tmpl').value;
+  const prefill = tmpl ? (RSST_PREFILL[tmpl] || {}) : {};
+  const ssid    = document.getElementById('rsst-study_subject_id');
+  if (ssid) {
+    ssid.value = prefill[RSST_PDF.study_subject_id] || '';
+    updateMirrors('study_subject_id');
+  }
+}
+
+// ── Add Req card ───────────────────────────────────────────────────────────
+function addReqCard(defaultTmpl) {
+  defaultTmpl = defaultTmpl || '';
+  const cid  = `req${reqCount++}`;
+  const colN = reqCount;
+
+  const card = document.createElement('div');
+  card.className = 'card req-card';
+  card.id = `card-${cid}`;
+
+  // ── Header ──
+  const hdr = document.createElement('div');
+  hdr.className = 'card-header';
+
+  const hdrTop = document.createElement('div');
+  hdrTop.className = 'card-header-top';
+  hdrTop.innerHTML = `<span class="card-badge">Req</span>`;
+  const removeBtn = document.createElement('button');
+  removeBtn.className = 'card-remove';
+  removeBtn.title = 'Remove';
+  removeBtn.textContent = '×';
+  removeBtn.onclick = () => removeReqCard(cid);
+  hdrTop.appendChild(removeBtn);
+  hdr.appendChild(hdrTop);
+
+  const tmplWrap = document.createElement('div');
+  tmplWrap.className = 'field-tmpl';
+  const tmplSel = document.createElement('select');
+  tmplSel.id = `sel-${cid}`;
+  tmplSel.innerHTML =
+    `<option value="">— select template —</option>` +
+    REQ_FILES.map(f =>
+      `<option value="${f}"${f === defaultTmpl ? ' selected' : ''}>${f.replace(/\.pdf$/i,'')}</option>`
+    ).join('');
+  tmplSel.addEventListener('change', () => onReqTmpl(cid));
+  tmplWrap.appendChild(tmplSel);
+  hdr.appendChild(tmplWrap);
+
+
+  card.appendChild(hdr);
+
+  // ── Body ──
+  const body = document.createElement('div');
+  body.className = 'card-body';
+
+  // Patient Identifier textarea
+  const pidTa = document.createElement('textarea');
+  pidTa.className = 'field-textarea';
+  pidTa.id = `pid-${cid}`;
+  pidTa.placeholder = 'MRN / DOB / Name…';
+  body.appendChild(makeField('Patient Identifier', pidTa, ''));
+
+  // Divider
+  const hr = document.createElement('hr');
+  hr.className = 'card-divider';
+  body.appendChild(hr);
+
+  // Shared field mirrors
+  [
+    { id: 'collection_date',  label: 'Collection Date'  },
+    { id: 'study_subject_id', label: 'Study Subject ID' },
+  ].forEach(f => {
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.className = `field-input mirror-val mirror-${f.id}`;
+    inp.readOnly = true;
+    inp.placeholder = '—';
+    const src = document.getElementById(`rsst-${f.id}`);
+    inp.value = src ? src.value : '';
+    body.appendChild(makeField(f.label, inp, ''));
+  });
+
+  card.appendChild(body);
+
+  // Insert before the add button
+  const addBtn = document.getElementById('add-req-btn');
+  document.getElementById('canvas').insertBefore(card, addBtn);
+
+  if (defaultTmpl) onReqTmpl(cid);
+}
+
+// ── Remove Req card ────────────────────────────────────────────────────────
+function removeReqCard(cid) {
+  const card = document.getElementById(`card-${cid}`);
+  if (card) card.remove();
+}
+
+// ── Req template change ────────────────────────────────────────────────────
+function onReqTmpl(cid) {
+  const sel     = document.getElementById(`sel-${cid}`);
+  const tmpl    = sel ? sel.value : '';
+  const prefill = tmpl ? (REQ_PREFILL[tmpl] || {}) : {};
+  const raw     = prefill[REQ_PDF.patient_identifier] || '';
+  const val     = raw.replace(/\r/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+  const ta      = document.getElementById(`pid-${cid}`);
+  if (ta) ta.value = val;
+}
+
+// ── Generate ───────────────────────────────────────────────────────────────
+async function generateAll() {
+  const rsstTmpl   = document.getElementById('rsst-tmpl').value;
+  const initials   = getRsstVal('subject_initials').trim();
+  const rsstBase   = rsstTmpl.replace(/\.pdf$/i, '') || 'RSST';
+  const rsstName   = initials ? `${rsstBase} ${initials}` : rsstBase;
+
+  const rsstFields = {};
+  ['collection_date','collection_time','study_subject_id','subject_initials','mrn'].forEach(fid => {
+    const inp = document.getElementById(`rsst-${fid}`);
+    if (!inp) return;
+    let v = inp.value.trim();
+    if (inp.type === 'date' && v) v = formatDateMDY(v);
+    if (v) rsstFields[fid] = v;
+  });
+
+  const reqForms = [];
+  document.querySelectorAll('.card.req-card').forEach(card => {
+    const cid  = card.id.replace('card-', '');
+    const sel      = document.getElementById(`sel-${cid}`);
+    const tmpl     = sel ? sel.value : '';
+    const tmplBase = tmpl.replace(/\.pdf$/i, '') || 'Req';
+    const name     = initials ? `${tmplBase} ${initials}` : tmplBase;
+    const pid      = (document.getElementById(`pid-${cid}`)?.value || '').trim();
+    reqForms.push({ template: tmpl, name, patient_identifier: pid });
+  });
+
+  if (!rsstTmpl && reqForms.every(r => !r.template)) {
+    toast('Select at least one template to generate.');
+    return;
+  }
+
+  const btn = document.getElementById('gen-btn');
+  btn.disabled = true;
+  btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="animation:spin .8s linear infinite"><path d="M7 1a6 6 0 110 12A6 6 0 017 1z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="28" stroke-dashoffset="14"/></svg> Generating…`;
+
+  try {
+    const resp = await fetch('/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rsst_template: rsstTmpl, rsst_name: rsstName, rsst_fields: rsstFields, req_forms: reqForms }),
+    });
+
+    if (!resp.ok) { toast(`Error ${resp.status}: ${resp.statusText}`); return; }
+
+    const blob = await resp.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = Object.assign(document.createElement('a'), { href: url, download: 'generated.zip' });
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    const n = (rsstTmpl ? 1 : 0) + reqForms.filter(r => r.template).length;
+    toast(`✓ Downloaded ${n} form${n !== 1 ? 's' : ''}.`);
+  } catch (e) {
+    toast(`Error: ${e.message}`);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3M2 10v1a1 1 0 001 1h8a1 1 0 001-1v-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Generate PDFs`;
+  }
+}
+
+// ── Spin animation ─────────────────────────────────────────────────────────
+const spinStyle = document.createElement('style');
+spinStyle.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
+document.head.appendChild(spinStyle);
+
+// ── Boot ───────────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
