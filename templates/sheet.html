@@ -359,39 +359,46 @@
     /* ── Add-Req card (ghost) ─────────────────────────────────────────── */
     .card-add {
       flex-shrink: 0;
-      width: 200px;
-      min-height: 120px;
-      background: none;
-      border: 2px dashed var(--border);
+      background: var(--surface);
+      border: 1px solid var(--border);
       border-radius: var(--radius);
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 8px;
+      gap: 6px;
       cursor: pointer;
-      transition: border-color .2s, background .2s;
+      transition: border-color .2s, color .2s, background .2s;
       color: var(--muted);
       font-family: var(--sans);
       font-size: 13px;
       font-weight: 500;
-      align-self: stretch;
+      padding: 9px 16px;
+      align-self: flex-start;
+      box-shadow: var(--shadow-sm);
     }
-    .card-add:hover {
-      border-color: var(--req);
-      color: var(--req);
-      background: var(--req-soft);
-    }
+    .card-add:hover { border-color: var(--req); color: var(--req); background: var(--req-soft); }
     .card-add-icon {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      border: 1.5px dashed currentColor;
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    /* ── Empty state ─────────────────────────────────────────────────────── */
+    .empty-state {
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      font-size: 20px;
-      line-height: 1;
+      height: calc(100vh - 56px);
+      gap: 10px;
+      color: var(--muted);
+    }
+    .empty-state-title {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text);
+    }
+    .empty-state-sub {
+      font-size: 13px;
     }
 
     /* ── Modal ───────────────────────────────────────────────────────────── */
@@ -505,12 +512,12 @@
   </div>
   <div class="patient-bar">
     <select class="patient-select" id="patient-sel" onchange="selectPatient()">
-      <option value="">— select patient —</option>
+      <option value="" disabled selected>Select Patient</option>
     </select>
-    <button class="btn-patient-save" onclick="openNewPatientModal()" title="Add a new patient">+ New Patient</button>
+    <button class="btn-patient-save" onclick="openNewPatientModal()" title="Add a new patient">New Patient</button>
     <button class="btn-patient-delete" id="del-patient-btn" onclick="deletePatient()" title="Remove selected patient" disabled>Remove</button>
   </div>
-  <button class="btn-generate" id="gen-btn" onclick="generateAll()">
+  <button class="btn-generate" id="gen-btn" onclick="generateAll()" disabled>
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
       <path d="M7 1v8M4 6l3 3 3-3M2 10v1a1 1 0 001 1h8a1 1 0 001-1v-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
@@ -518,8 +525,14 @@
   </button>
 </div>
 
+<!-- ── Empty state ──────────────────────────────────────────────────────── -->
+<div class="empty-state" id="empty-state">
+  <div class="empty-state-title">No patient selected</div>
+  <div class="empty-state-sub">Select or create a patient to get started</div>
+</div>
+
 <!-- ── Canvas ────────────────────────────────────────────────────────────── -->
-<div class="canvas" id="canvas">
+<div class="canvas" id="canvas" style="display:none">
   <!-- RSST card (fixed) -->
   <div class="card rsst-card" id="rsst-card">
     <div class="card-header">
@@ -594,8 +607,8 @@ const RSST_FIELDS = [
   { id: 'collection_date',  label: 'Collection Date',  shared: true,  dateInput: true },
   { id: 'collection_time',  label: 'Collection Time',  shared: false, timeInput: true },
   { id: 'study_subject_id', label: 'Study Subject ID', shared: true,  prefill: true },
-  { id: 'subject_initials', label: 'Subject Initials', shared: false },
-  { id: 'mrn',              label: 'MRN',              shared: false },
+  { id: 'subject_initials', label: 'Subject Initials', shared: false, fromPatient: true },
+  { id: 'mrn',              label: 'MRN',              shared: false, fromPatient: true },
   { id: 'date_submitted',   label: 'Date Submitted',   shared: false, auto: true },
 ];
 
@@ -630,6 +643,12 @@ function updateMirrors(fid) {
   document.querySelectorAll(`.mirror-${fid}`).forEach(el => { el.value = val; });
 }
 
+function getRsstFieldValue(fid) {
+  const inp = document.getElementById(`rsst-${fid}`);
+  if (!inp) return '';
+  return inp.type === 'date' ? formatDateMDY(inp.value) : inp.value;
+}
+
 function makeMirrorLabel(text) {
   return `${text} <span class="badge-mirror">from RSST</span>`;
 }
@@ -661,7 +680,7 @@ function patientLabel(patient) {
 function renderPatientSelect() {
   const sel = document.getElementById('patient-sel');
   const cur = sel.value;
-  sel.innerHTML = `<option value="">— select patient —</option>`;
+  sel.innerHTML = `<option value="" disabled>Select Patient</option>`;
   patients.forEach(p => {
     const o = new Option(patientLabel(p), p.id);
     sel.appendChild(o);
@@ -680,7 +699,13 @@ function selectPatient() {
   const sel = document.getElementById('patient-sel');
   const pid = sel.value;
   document.getElementById('del-patient-btn').disabled = !pid;
-  if (!pid) return;
+  if (!pid) {
+    document.getElementById('canvas').style.display = 'none';
+    document.getElementById('empty-state').style.display = 'flex';
+    return;
+  }
+  document.getElementById('canvas').style.display = 'flex';
+  document.getElementById('empty-state').style.display = 'none';
   const patient = patients.find(p => p.id === pid);
   if (!patient) return;
 
@@ -699,6 +724,7 @@ function selectPatient() {
     const ta  = document.getElementById(`pid-${cid}`);
     if (ta) { ta.value = identifier; fitTextarea(ta); }
   });
+  validateForm();
 }
 
 function openNewPatientModal() {
@@ -729,6 +755,7 @@ async function saveNewPatient() {
   document.getElementById('patient-sel').value = patient.id;
   document.getElementById('del-patient-btn').disabled = false;
   closeNewPatientModal();
+  selectPatient();
   toast(`Patient saved: ${patientLabel(patient)}`);
 }
 
@@ -741,6 +768,7 @@ async function deletePatient() {
   if (!resp.ok) { toast('Failed to remove patient.'); return; }
   patients = patients.filter(p => p.id !== pid);
   renderPatientSelect();
+  selectPatient();
   toast(`Removed: ${label}`);
 }
 
@@ -766,43 +794,20 @@ function init() {
       inp.disabled = true;
       body.appendChild(makeField(f.label, inp, ''));
     } else if (f.dateInput) {
-      // Formatted text display + hidden date picker overlay
-      const wrap = document.createElement('div');
-      wrap.style.cssText = 'position:relative';
-
-      const display = document.createElement('input');
-      display.type = 'text';
-      display.className = 'field-input';
-      display.id = `rsst-${f.id}`;
-      display.readOnly = true;
-      display.placeholder = 'Select date';
-      display.style.cursor = 'pointer';
-
-      const picker = document.createElement('input');
-      picker.type = 'date';
-      picker.style.cssText = 'position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;z-index:1';
-      picker.tabIndex = -1;
-
-      picker.addEventListener('change', () => {
-        display.value = picker.value ? formatDateMDY(picker.value) : '';
-        updateMirrors(f.id);
-      });
-      display.addEventListener('click', () => {
-        try { picker.showPicker(); } catch(e) { picker.click(); }
-      });
-
-      wrap.appendChild(display);
-      wrap.appendChild(picker);
-      body.appendChild(makeField(f.label, wrap, ''));
+      const inp = document.createElement('input');
+      inp.type = 'date';
+      inp.className = 'field-input';
+      inp.id = `rsst-${f.id}`;
+      inp.addEventListener('change', () => { updateMirrors(f.id); validateForm(); });
+      body.appendChild(makeField(f.label, inp, ''));
     } else {
       inp = document.createElement('input');
       inp.type = f.timeInput ? 'time' : 'text';
-      inp.className = 'field-input';
+      inp.className = f.fromPatient ? 'field-input mirror-val' : 'field-input';
       inp.id = `rsst-${f.id}`;
+      inp.readOnly = !!f.fromPatient;
       inp.placeholder = ' ';
-      if (f.shared) {
-        inp.addEventListener('input', () => updateMirrors(f.id));
-      }
+      inp.addEventListener('input', () => { if (f.shared) updateMirrors(f.id); validateForm(); });
       body.appendChild(makeField(f.label, inp, ''));
     }
   });
@@ -822,6 +827,7 @@ function onRsstTmpl() {
     ssid.value = prefill[RSST_PDF.study_subject_id] || '';
     updateMirrors('study_subject_id');
   }
+  validateForm();
 }
 
 // ── Add Req card ───────────────────────────────────────────────────────────
@@ -863,7 +869,7 @@ function addReqCard(defaultTmpl) {
     REQ_FILES.map(f =>
       `<option value="${f}"${f === defaultTmpl ? ' selected' : ''}>${f.replace(/\.pdf$/i,'')}</option>`
     ).join('');
-  tmplSel.addEventListener('change', () => onReqTmpl(cid));
+  tmplSel.addEventListener('change', () => { onReqTmpl(cid); validateForm(); });
   tmplWrap.appendChild(tmplSel);
   hdr.appendChild(tmplWrap);
 
@@ -879,13 +885,9 @@ function addReqCard(defaultTmpl) {
   pidTa.className = 'field-textarea mirror-val';
   pidTa.id = `pid-${cid}`;
   pidTa.readOnly = true;
-  pidTa.placeholder = 'Select a patient above';
+  pidTa.rows = 1;
+  pidTa.placeholder = 'No patient selected';
   body.appendChild(makeField('Patient Identifier', pidTa, ''));
-
-  // Divider
-  const hr = document.createElement('hr');
-  hr.className = 'card-divider';
-  body.appendChild(hr);
 
   // Shared field mirrors
   [
@@ -915,17 +917,37 @@ function addReqCard(defaultTmpl) {
 function removeReqCard(cid) {
   const card = document.getElementById(`card-${cid}`);
   if (card) card.remove();
+  validateForm();
 }
 
 // ── Req template change ────────────────────────────────────────────────────
 function onReqTmpl(cid) {
-  const sel     = document.getElementById(`sel-${cid}`);
-  const tmpl    = sel ? sel.value : '';
-  const prefill = tmpl ? (REQ_PREFILL[tmpl] || {}) : {};
-  const raw     = prefill[REQ_PDF.patient_identifier] || '';
-  const val     = raw.replace(/\r/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
-  const ta      = document.getElementById(`pid-${cid}`);
-  if (ta) { ta.value = val; fitTextarea(ta); }
+  // Template change does not affect patient identifier — that comes from patient selection only
+}
+
+// ── Form validation ────────────────────────────────────────────────────────
+function validateForm() {
+  const rsstFields = ['collection_date','collection_time','study_subject_id','subject_initials','mrn'];
+  const rsstTmpl = document.getElementById('rsst-tmpl')?.value;
+  if (!rsstTmpl) { document.getElementById('gen-btn').disabled = true; return; }
+
+  for (const fid of rsstFields) {
+    if (!getRsstFieldValue(fid).trim()) {
+      document.getElementById('gen-btn').disabled = true; return;
+    }
+  }
+
+  const reqCards = document.querySelectorAll('.card.req-card');
+  if (!reqCards.length) { document.getElementById('gen-btn').disabled = true; return; }
+
+  for (const card of reqCards) {
+    const cid  = card.id.replace('card-', '');
+    const tmpl = document.getElementById(`sel-${cid}`)?.value;
+    const pid  = document.getElementById(`pid-${cid}`)?.value?.trim();
+    if (!tmpl || !pid) { document.getElementById('gen-btn').disabled = true; return; }
+  }
+
+  document.getElementById('gen-btn').disabled = false;
 }
 
 // ── Generate ───────────────────────────────────────────────────────────────
@@ -937,9 +959,7 @@ async function generateAll() {
 
   const rsstFields = {};
   ['collection_date','collection_time','study_subject_id','subject_initials','mrn'].forEach(fid => {
-    const inp = document.getElementById(`rsst-${fid}`);
-    if (!inp) return;
-    const v = inp.value.trim();
+    const v = getRsstFieldValue(fid).trim();
     if (v) rsstFields[fid] = v;
   });
 
