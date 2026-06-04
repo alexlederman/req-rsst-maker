@@ -1,16 +1,19 @@
 import os
 import io
 import json
+import time
 import zipfile
 from datetime import datetime
 
-from flask import Flask, render_template, request, send_file, abort
+from flask import Flask, render_template, request, send_file, send_from_directory, abort, jsonify
 from pdf_utils import get_fields_with_meta, fill_pdf
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 
-TEMPLATES_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), '..', 'Templates'))
+TEMPLATES_DIR  = os.path.normpath(os.path.join(os.path.dirname(__file__), '..', 'Templates'))
+ASSETS_DIR     = os.path.normpath(os.path.join(os.path.dirname(__file__), '..', 'assets'))
+PATIENTS_FILE  = os.path.join(os.path.dirname(__file__), 'patients.json')
 RSST_DIR = os.path.join(TEMPLATES_DIR, 'RSST')
 REQ_DIR  = os.path.join(TEMPLATES_DIR, 'Req')
 
@@ -33,6 +36,18 @@ REQ_MAP = {
 }
 
 
+def load_patients():
+    if not os.path.exists(PATIENTS_FILE):
+        return []
+    with open(PATIENTS_FILE) as f:
+        return json.load(f)
+
+
+def save_patients(patients):
+    with open(PATIENTS_FILE, 'w') as f:
+        json.dump(patients, f, indent=2)
+
+
 def list_pdfs(folder):
     if not os.path.isdir(folder):
         return []
@@ -52,6 +67,11 @@ def load_prefills(folder, pdf_field_names):
 # Pre-load template data for JS (values to pre-populate editable cells)
 rsst_prefills = load_prefills(RSST_DIR, list(RSST_MAP.values()))
 req_prefills  = load_prefills(REQ_DIR,  list(REQ_MAP.values()))
+
+
+@app.route('/assets/<path:filename>')
+def serve_asset(filename):
+    return send_from_directory(ASSETS_DIR, filename)
 
 
 @app.route('/')
@@ -121,6 +141,31 @@ def generate():
     zip_buf.seek(0)
     return send_file(zip_buf, mimetype='application/zip',
                      as_attachment=True, download_name='generated.zip')
+
+
+@app.route('/patients', methods=['GET'])
+def get_patients():
+    return jsonify(load_patients())
+
+
+@app.route('/patients', methods=['POST'])
+def add_patient():
+    data = request.get_json(force=True)
+    identifier = (data.get('identifier') or '').strip()
+    if not identifier:
+        abort(400)
+    patients = load_patients()
+    patient = {'id': str(int(time.time() * 1000)), 'identifier': identifier}
+    patients.append(patient)
+    save_patients(patients)
+    return jsonify(patient), 201
+
+
+@app.route('/patients/<patient_id>', methods=['DELETE'])
+def delete_patient(patient_id):
+    patients = [p for p in load_patients() if p['id'] != patient_id]
+    save_patients(patients)
+    return '', 204
 
 
 def _unique(name, seen):

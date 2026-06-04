@@ -3,30 +3,40 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lab Form Filler</title>
+  <title>Form Creator</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg:         #eeece7;
-      --surface:    #ffffff;
-      --border:     #dedad2;
-      --border-light: #eeece7;
-      --text:       #1c1a17;
-      --muted:      #9b9690;
-      --rsst:       #1c3d6e;
-      --rsst-soft:  #e8eff9;
-      --req:        #1a5c42;
-      --req-soft:   #e5f4ed;
-      --action:     #1c3d6e;
-      --action-fg:  #ffffff;
-      --danger:     #c0392b;
-      --shadow-sm:  0 1px 2px rgba(0,0,0,.06), 0 2px 8px rgba(0,0,0,.06);
-      --shadow:     0 2px 4px rgba(0,0,0,.06), 0 6px 20px rgba(0,0,0,.07);
-      --radius:     14px;
-      --mono:       'DM Mono', ui-monospace, monospace;
-      --sans:       'DM Sans', system-ui, sans-serif;
+      /* Fred Hutch brand colors */
+      --fh-navy:        #18365D;
+      --fh-dark-navy:   #112345;
+      --fh-teal:        #0A799A;
+      --fh-bright-blue: #00ABC8;
+      --fh-yellow:      #FFB500;
+      --fh-purple:      #AA4AC4;
+      --fh-light-grey:  #F4F4F4;
+      --fh-white:       #FFFFFF;
+
+      --bg:           var(--fh-light-grey);
+      --surface:      var(--fh-white);
+      --border:       #dde1e7;
+      --border-light: #eceef1;
+      --text:         var(--fh-dark-navy);
+      --muted:        #6b7a93;
+      --rsst:         var(--fh-navy);
+      --rsst-soft:    #e5eaf2;
+      --req:          var(--fh-teal);
+      --req-soft:     #e0f3f7;
+      --action:       var(--fh-teal);
+      --action-fg:    var(--fh-white);
+      --danger:       #c0392b;
+      --shadow-sm:    0 1px 2px rgba(17,35,69,.06), 0 2px 8px rgba(17,35,69,.06);
+      --shadow:       0 2px 4px rgba(17,35,69,.06), 0 6px 20px rgba(17,35,69,.07);
+      --radius:       6px;
+      --mono:         'Geist', system-ui, sans-serif;
+      --sans:         'Geist', system-ui, sans-serif;
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -46,7 +56,7 @@
       justify-content: space-between;
       height: 56px;
       padding: 0 24px;
-      background: var(--surface);
+      background: var(--fh-white);
       border-bottom: 1px solid var(--border);
       position: relative;
       z-index: 10;
@@ -54,11 +64,16 @@
 
     .app-wordmark {
       display: flex;
-      align-items: baseline;
-      gap: 10px;
+      align-items: center;
+      gap: 12px;
+    }
+    .fh-logo {
+      height: 28px;
+      width: auto;
+      display: block;
     }
     .app-wordmark-title {
-      font-family: var(--mono);
+      font-family: var(--sans);
       font-size: 13px;
       font-weight: 500;
       letter-spacing: 0.04em;
@@ -73,14 +88,50 @@
       text-transform: uppercase;
     }
 
+    .patient-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .patient-select {
+      appearance: none;
+      -webkit-appearance: none;
+      background: var(--fh-white) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7' viewBox='0 0 12 7'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7a93' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 10px center;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 7px 28px 7px 10px;
+      font-family: var(--sans);
+      font-size: 13px;
+      color: var(--text);
+      outline: none;
+      min-width: 200px;
+      cursor: pointer;
+    }
+    .patient-select:focus { border-color: var(--fh-teal); }
+    .btn-patient-save, .btn-patient-delete {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 7px 12px;
+      font-family: var(--sans);
+      font-size: 13px;
+      cursor: pointer;
+      background: var(--fh-white);
+      color: var(--text);
+      transition: background .15s, border-color .15s, color .15s;
+      white-space: nowrap;
+    }
+    .btn-patient-save:hover  { background: var(--req-soft); border-color: var(--fh-teal); color: var(--fh-teal); }
+    .btn-patient-delete:hover:not(:disabled) { background: #fdf0ef; border-color: var(--danger); color: var(--danger); }
+    .btn-patient-delete:disabled { opacity: .35; cursor: default; }
+
     .btn-generate {
       display: flex;
       align-items: center;
       gap: 8px;
-      background: var(--action);
-      color: var(--action-fg);
+      background: var(--fh-teal);
+      color: var(--fh-white);
       border: none;
-      border-radius: 8px;
+      border-radius: 6px;
       padding: 9px 20px;
       font-family: var(--sans);
       font-size: 13px;
@@ -123,8 +174,7 @@
 
     /* ── Card header ──────────────────────────────────────────────────── */
     .card-header {
-      padding: 14px 16px 12px;
-      border-bottom: 1px solid var(--border-light);
+      padding: 14px 16px 0;
     }
 
     .card-header-top {
@@ -135,16 +185,11 @@
     }
 
     .card-badge {
-      font-family: var(--mono);
-      font-size: 9px;
-      font-weight: 500;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      padding: 3px 8px;
-      border-radius: 4px;
+      font-family: var(--sans);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
     }
-    .rsst-card .card-badge { background: var(--rsst-soft); color: var(--rsst); }
-    .req-card  .card-badge { background: var(--req-soft);  color: var(--req); }
 
     .card-remove {
       background: none;
@@ -164,7 +209,7 @@
       -webkit-appearance: none;
       background: var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7' viewBox='0 0 12 7'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239b9690' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 10px center;
       border: 1px solid var(--border);
-      border-radius: 7px;
+      border-radius: 6px;
       padding: 7px 28px 7px 10px;
       font-family: var(--sans);
       font-size: 12.5px;
@@ -198,7 +243,7 @@
 
     /* ── Card body ────────────────────────────────────────────────────── */
     .card-body {
-      padding: 16px 16px 20px;
+      padding: 16px 16px 20px 16px;
     }
 
     .field {
@@ -207,11 +252,10 @@
     .field:last-child { margin-bottom: 0; }
 
     .field-label {
-      font-family: var(--mono);
-      font-size: 9.5px;
-      font-weight: 400;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
+      font-family: var(--sans);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0;
       color: var(--muted);
       margin-bottom: 5px;
       display: flex;
@@ -223,7 +267,7 @@
       letter-spacing: 0.06em;
       background: #f0e8ff;
       color: #6b3fa0;
-      border-radius: 3px;
+      border-radius: 2px;
       padding: 1px 5px;
     }
     .field-label .badge-auto {
@@ -231,7 +275,7 @@
       letter-spacing: 0.06em;
       background: #fff3d6;
       color: #8a5c00;
-      border-radius: 3px;
+      border-radius: 2px;
       padding: 1px 5px;
     }
     .field-label .badge-mirror {
@@ -239,7 +283,7 @@
       letter-spacing: 0.06em;
       background: #f0e8e8;
       color: #7a3a3a;
-      border-radius: 3px;
+      border-radius: 2px;
       padding: 1px 5px;
     }
 
@@ -277,7 +321,7 @@
       width: 100%;
       background: var(--bg);
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: 6px;
       padding: 8px 10px;
       font-family: var(--sans);
       font-size: 13px;
@@ -370,8 +414,15 @@
 <!-- ── Toolbar ──────────────────────────────────────────────────────────── -->
 <div class="toolbar">
   <div class="app-wordmark">
-    <span class="app-wordmark-title">Lab Form Filler</span>
-    <span class="app-wordmark-sub">Fred Hutch</span>
+    <img src="/assets/fred_hutch.svg" alt="Fred Hutch" class="fh-logo">
+    <span class="app-wordmark-title">Form Creator</span>
+  </div>
+  <div class="patient-bar">
+    <select class="patient-select" id="patient-sel" onchange="selectPatient()">
+      <option value="">— select patient —</option>
+    </select>
+    <button class="btn-patient-save" id="save-patient-btn" onclick="savePatient()" title="Save current patient identifier">+ Save</button>
+    <button class="btn-patient-delete" id="del-patient-btn" onclick="deletePatient()" title="Remove selected patient" disabled>Remove</button>
   </div>
   <button class="btn-generate" id="gen-btn" onclick="generateAll()">
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -390,6 +441,7 @@
         <span class="card-badge">RSST</span>
       </div>
       <div class="field-tmpl">
+        <div class="field-label" style="margin-bottom:5px">Template</div>
         <select id="rsst-tmpl" onchange="onRsstTmpl()">
           <option value="">— select template —</option>
         </select>
@@ -483,6 +535,89 @@ function makeField(label, inputEl, badgeHtml) {
   return wrap;
 }
 
+// ── Patient database ──────────────────────────────────────────────────────
+let patients = [];
+
+function patientLabel(identifier) {
+  return identifier.split('\n')[0].trim() || 'Unknown';
+}
+
+function renderPatientSelect() {
+  const sel = document.getElementById('patient-sel');
+  const cur = sel.value;
+  sel.innerHTML = `<option value="">— select patient —</option>`;
+  patients.forEach(p => {
+    const o = new Option(patientLabel(p.identifier), p.id);
+    sel.appendChild(o);
+  });
+  sel.value = cur;
+  document.getElementById('del-patient-btn').disabled = !sel.value;
+}
+
+async function loadPatients() {
+  const resp = await fetch('/patients');
+  patients = await resp.json();
+  renderPatientSelect();
+}
+
+function selectPatient() {
+  const sel = document.getElementById('patient-sel');
+  const pid = sel.value;
+  document.getElementById('del-patient-btn').disabled = !pid;
+  if (!pid) return;
+  const patient = patients.find(p => p.id === pid);
+  if (!patient) return;
+
+  const identifier = patient.identifier;
+  const mrn = patientLabel(identifier);  // first line
+
+  // Fill MRN in RSST card
+  const mrnInp = document.getElementById('rsst-mrn');
+  if (mrnInp) mrnInp.value = mrn;
+
+  // Fill Patient Identifier in all Req cards
+  document.querySelectorAll('.card.req-card').forEach(card => {
+    const cid = card.id.replace('card-', '');
+    const ta  = document.getElementById(`pid-${cid}`);
+    if (ta) ta.value = identifier;
+  });
+}
+
+async function savePatient() {
+  // Read identifier from the first req card
+  const firstReq = document.querySelector('.card.req-card');
+  if (!firstReq) { toast('Add a Req card first.'); return; }
+  const cid = firstReq.id.replace('card-', '');
+  const ta  = document.getElementById(`pid-${cid}`);
+  const identifier = (ta ? ta.value : '').trim();
+  if (!identifier) { toast('Enter a patient identifier in the Req card first.'); return; }
+
+  const resp = await fetch('/patients', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ identifier }),
+  });
+  if (!resp.ok) { toast('Failed to save patient.'); return; }
+  const patient = await resp.json();
+  patients.push(patient);
+  renderPatientSelect();
+  document.getElementById('patient-sel').value = patient.id;
+  document.getElementById('del-patient-btn').disabled = false;
+  toast(`Patient saved: ${patientLabel(identifier)}`);
+}
+
+async function deletePatient() {
+  const sel = document.getElementById('patient-sel');
+  const pid = sel.value;
+  if (!pid) return;
+  const label = patientLabel(patients.find(p => p.id === pid)?.identifier || '');
+  const resp = await fetch(`/patients/${pid}`, { method: 'DELETE' });
+  if (!resp.ok) { toast('Failed to remove patient.'); return; }
+  patients = patients.filter(p => p.id !== pid);
+  renderPatientSelect();
+  toast(`Removed: ${label}`);
+}
+
 // ── Init ───────────────────────────────────────────────────────────────────
 function init() {
   // Populate RSST dropdown
@@ -563,6 +698,11 @@ function addReqCard(defaultTmpl) {
 
   const tmplWrap = document.createElement('div');
   tmplWrap.className = 'field-tmpl';
+  const tmplLbl = document.createElement('div');
+  tmplLbl.className = 'field-label';
+  tmplLbl.style.marginBottom = '5px';
+  tmplLbl.textContent = 'Template';
+  tmplWrap.appendChild(tmplLbl);
   const tmplSel = document.createElement('select');
   tmplSel.id = `sel-${cid}`;
   tmplSel.innerHTML =
@@ -704,6 +844,7 @@ document.head.appendChild(spinStyle);
 
 // ── Boot ───────────────────────────────────────────────────────────────────
 init();
+loadPatients();
 </script>
 </body>
 </html>
