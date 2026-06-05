@@ -605,7 +605,7 @@ const REQ_PDF  = { patient_identifier: 'Patient Indentifiers' };
 // RSST field definitions
 const RSST_FIELDS = [
   { id: 'collection_date',  label: 'Collection Date',  shared: true,  dateInput: true },
-  { id: 'collection_time',  label: 'Collection Time',  shared: false, timeInput: true },
+  { id: 'collection_time',  label: 'Collection Time',  shared: false },
   { id: 'study_subject_id', label: 'Study Subject ID', shared: true,  prefill: true },
   { id: 'subject_initials', label: 'Subject Initials', shared: false, fromPatient: true },
   { id: 'mrn',              label: 'MRN',              shared: false, fromPatient: true },
@@ -673,8 +673,7 @@ function fitTextarea(ta) {
 }
 
 function patientLabel(patient) {
-  const mrn = (patient.identifier || '').split('\n')[0].trim() || 'Unknown';
-  return patient.initials ? `${patient.initials} — ${mrn}` : mrn;
+  return patient.initials || (patient.identifier || '').split('\n')[0].trim() || 'Unknown';
 }
 
 function renderPatientSelect() {
@@ -802,11 +801,11 @@ function init() {
       body.appendChild(makeField(f.label, inp, ''));
     } else {
       inp = document.createElement('input');
-      inp.type = f.timeInput ? 'time' : 'text';
+      inp.type = 'text';
       inp.className = f.fromPatient ? 'field-input mirror-val' : 'field-input';
       inp.id = `rsst-${f.id}`;
       inp.readOnly = !!f.fromPatient;
-      inp.placeholder = ' ';
+      inp.placeholder = f.id === 'collection_time' ? 'HH:MM' : ' ';
       inp.addEventListener('input', () => { if (f.shared) updateMirrors(f.id); validateForm(); });
       body.appendChild(makeField(f.label, inp, ''));
     }
