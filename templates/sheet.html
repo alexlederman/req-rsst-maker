@@ -8,6 +8,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
+    @font-face { font-family: 'Aptos'; src: local('Aptos'); }
+  </style>
+  <style>
     :root {
       /* Fred Hutch brand colors */
       --fh-navy:        #18365D;
@@ -35,8 +38,8 @@
       --shadow-sm:    0 1px 2px rgba(17,35,69,.06), 0 2px 8px rgba(17,35,69,.06);
       --shadow:       0 2px 4px rgba(17,35,69,.06), 0 6px 20px rgba(17,35,69,.07);
       --radius:       6px;
-      --mono:         'Geist', system-ui, sans-serif;
-      --sans:         'Geist', system-ui, sans-serif;
+      --mono:         'Aptos', 'Geist', system-ui, sans-serif;
+      --sans:         'Aptos', 'Geist', system-ui, sans-serif;
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -74,7 +77,7 @@
     }
     .app-wordmark-title {
       font-family: var(--sans);
-      font-size: 13px;
+      font-size: 15px;
       font-weight: 500;
       letter-spacing: 0.04em;
       color: var(--text);
@@ -329,7 +332,7 @@
       color: var(--text);
       outline: none;
       resize: vertical;
-      min-height: 72px;
+      min-height: 96px;
       transition: border-color .2s;
       line-height: 1.5;
     }
@@ -376,10 +379,22 @@
       align-self: flex-start;
       box-shadow: var(--shadow-sm);
     }
-    .card-add:hover { border-color: var(--req); color: var(--req); background: var(--req-soft); }
+    .card-add:hover { border-color: #bbb; color: var(--text); background: var(--bg); }
     .card-add-icon {
       font-size: 16px;
       line-height: 1;
+    }
+
+    /* ── Drag-and-drop ───────────────────────────────────────────────────── */
+    .card.req-card { cursor: grab; }
+    .card.req-card:active { cursor: grabbing; }
+    .card.req-card input, .card.req-card select,
+    .card.req-card textarea, .card.req-card button { cursor: auto; }
+    .card-ghost {
+      position: fixed;
+      pointer-events: none;
+      z-index: 1000;
+      box-shadow: 0 16px 48px rgba(17,35,69,.22);
     }
 
     /* ── Empty state ─────────────────────────────────────────────────────── */
@@ -542,7 +557,7 @@
       <div class="field-tmpl">
         <div class="field-label" style="margin-bottom:5px">Template</div>
         <select id="rsst-tmpl" onchange="onRsstTmpl()">
-          <option value="">— select template —</option>
+          <option value="" disabled selected style="color:var(--muted)">Select Template</option>
         </select>
       </div>
     </div>
@@ -554,10 +569,7 @@
   <!-- Req cards injected here by addReqCard() -->
 
   <!-- Add Req button -->
-  <button class="card-add" id="add-req-btn" onclick="addReqCard()">
-    <div class="card-add-icon">+</div>
-    <span>Add Req</span>
-  </button>
+  <button class="card-add" id="add-req-btn" onclick="addReqCard()">New Req</button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -575,8 +587,12 @@
         <input class="field-input" type="text" id="new-patient-initials" placeholder="e.g. JD" autocomplete="off">
       </div>
       <div class="field">
+        <div class="field-label">Subject ID</div>
+        <input class="field-input" type="text" id="new-patient-subject-id" placeholder="Subject ID" autocomplete="off">
+      </div>
+      <div class="field">
         <div class="field-label">Patient Identifier</div>
-        <textarea class="field-textarea" id="new-patient-identifier" placeholder="MRN&#10;DOB: AGE M/F&#10;&#10;NAME"></textarea>
+        <textarea class="field-textarea" id="new-patient-identifier" rows="4" placeholder="MRN&#10;DOB: AGE M/F&#10;&#10;NAME"></textarea>
       </div>
     </div>
     <div class="modal-footer">
@@ -606,7 +622,7 @@ const REQ_PDF  = { patient_identifier: 'Patient Indentifiers' };
 const RSST_FIELDS = [
   { id: 'collection_date',  label: 'Collection Date',  shared: true,  dateInput: true },
   { id: 'collection_time',  label: 'Collection Time',  shared: false },
-  { id: 'study_subject_id', label: 'Study Subject ID', shared: true,  prefill: true },
+  { id: 'study_subject_id', label: 'Study Subject ID', shared: true,  fromPatient: true },
   { id: 'subject_initials', label: 'Subject Initials', shared: false, fromPatient: true },
   { id: 'mrn',              label: 'MRN',              shared: false, fromPatient: true },
   { id: 'date_submitted',   label: 'Date Submitted',   shared: false, auto: true },
@@ -711,11 +727,13 @@ function selectPatient() {
   const identifier = patient.identifier;
   const mrn = (identifier.split('\n')[0] || '').trim();
 
-  // Fill MRN and Subject Initials in RSST card
+  // Fill MRN, Subject Initials, and Subject ID in RSST card
   const mrnInp = document.getElementById('rsst-mrn');
   if (mrnInp) mrnInp.value = mrn;
   const initialsInp = document.getElementById('rsst-subject_initials');
   if (initialsInp) initialsInp.value = patient.initials || '';
+  const ssidInp = document.getElementById('rsst-study_subject_id');
+  if (ssidInp) { ssidInp.value = patient.subject_id || ''; updateMirrors('study_subject_id'); }
 
   // Fill Patient Identifier in all Req cards
   document.querySelectorAll('.card.req-card').forEach(card => {
@@ -728,6 +746,7 @@ function selectPatient() {
 
 function openNewPatientModal() {
   document.getElementById('new-patient-initials').value = '';
+  document.getElementById('new-patient-subject-id').value = '';
   document.getElementById('new-patient-identifier').value = '';
   document.getElementById('modal-overlay').classList.add('open');
   document.getElementById('new-patient-initials').focus();
@@ -739,13 +758,14 @@ function closeNewPatientModal() {
 
 async function saveNewPatient() {
   const initials   = document.getElementById('new-patient-initials').value.trim();
+  const subject_id = document.getElementById('new-patient-subject-id').value.trim();
   const identifier = document.getElementById('new-patient-identifier').value.trim();
   if (!identifier) { toast('Patient identifier is required.'); return; }
 
   const resp = await fetch('/patients', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ identifier, initials }),
+    body: JSON.stringify({ identifier, initials, subject_id }),
   });
   if (!resp.ok) { toast('Failed to save patient.'); return; }
   const patient = await resp.json();
@@ -819,13 +839,6 @@ function init() {
 
 // ── RSST template change ───────────────────────────────────────────────────
 function onRsstTmpl() {
-  const tmpl    = document.getElementById('rsst-tmpl').value;
-  const prefill = tmpl ? (RSST_PREFILL[tmpl] || {}) : {};
-  const ssid    = document.getElementById('rsst-study_subject_id');
-  if (ssid) {
-    ssid.value = prefill[RSST_PDF.study_subject_id] || '';
-    updateMirrors('study_subject_id');
-  }
   validateForm();
 }
 
@@ -845,7 +858,12 @@ function addReqCard(defaultTmpl) {
 
   const hdrTop = document.createElement('div');
   hdrTop.className = 'card-header-top';
-  hdrTop.innerHTML = `<span class="card-badge">Req</span>`;
+  hdrTop.appendChild(document.createElement('span')).className = 'card-badge';
+  hdrTop.querySelector('.card-badge').textContent = 'Req';
+  card.addEventListener('pointerdown', e => {
+    if (e.target.closest('input, select, textarea, button')) return;
+    startCardDrag(e, card);
+  });
   const removeBtn = document.createElement('button');
   removeBtn.className = 'card-remove';
   removeBtn.title = 'Remove';
@@ -864,11 +882,11 @@ function addReqCard(defaultTmpl) {
   const tmplSel = document.createElement('select');
   tmplSel.id = `sel-${cid}`;
   tmplSel.innerHTML =
-    `<option value="">— select template —</option>` +
+    `<option value="" disabled selected style="color:var(--muted)">Select Template</option>` +
     REQ_FILES.map(f =>
       `<option value="${f}"${f === defaultTmpl ? ' selected' : ''}>${f.replace(/\.pdf$/i,'')}</option>`
     ).join('');
-  tmplSel.addEventListener('change', () => { onReqTmpl(cid); validateForm(); });
+  tmplSel.addEventListener('change', () => { onReqTmpl(cid); updateReqTemplateOptions(); validateForm(); });
   tmplWrap.appendChild(tmplSel);
   hdr.appendChild(tmplWrap);
 
@@ -909,6 +927,7 @@ function addReqCard(defaultTmpl) {
   const addBtn = document.getElementById('add-req-btn');
   document.getElementById('canvas').insertBefore(card, addBtn);
 
+  updateReqTemplateOptions();
   if (defaultTmpl) onReqTmpl(cid);
 }
 
@@ -916,12 +935,130 @@ function addReqCard(defaultTmpl) {
 function removeReqCard(cid) {
   const card = document.getElementById(`card-${cid}`);
   if (card) card.remove();
+  updateReqTemplateOptions();
   validateForm();
 }
 
 // ── Req template change ────────────────────────────────────────────────────
 function onReqTmpl(cid) {
   // Template change does not affect patient identifier — that comes from patient selection only
+}
+
+// ── Req template uniqueness ────────────────────────────────────────────────
+function updateReqTemplateOptions() {
+  const selected = new Set();
+  document.querySelectorAll('.card.req-card').forEach(card => {
+    const cid = card.id.replace('card-', '');
+    const sel = document.getElementById(`sel-${cid}`);
+    if (sel && sel.value) selected.add(sel.value);
+  });
+  document.querySelectorAll('.card.req-card').forEach(card => {
+    const cid = card.id.replace('card-', '');
+    const sel = document.getElementById(`sel-${cid}`);
+    if (!sel) return;
+    const cur = sel.value;
+    Array.from(sel.options).forEach(opt => {
+      if (!opt.value) return;
+      opt.disabled = opt.value !== cur && selected.has(opt.value);
+    });
+  });
+}
+
+// ── Pointer-based drag-and-drop reorder ───────────────────────────────────
+let _drag = null;
+
+function startCardDrag(e, card) {
+  e.preventDefault();
+
+  const canvas = document.getElementById('canvas');
+  // Clear animations and transforms before snapshotting positions.
+  // animation-fill-mode:both on card-in locks transform:none which would override drag transforms.
+  canvas.querySelectorAll('.card.req-card').forEach(c => {
+    c.style.animation  = 'none';
+    c.style.transition = '';
+    c.style.transform  = '';
+  });
+
+  const rect = card.getBoundingClientRect();
+  const allCards = Array.from(canvas.querySelectorAll('.card.req-card'));
+  const originalIndex = allCards.indexOf(card);
+  const otherCards = allCards.filter(c => c !== card);
+  // Snapshot natural (un-transformed) positions once — they won't change during drag
+  const naturalPositions = otherCards.map(c => c.getBoundingClientRect().left);
+
+  const ghost = card.cloneNode(true);
+  ghost.className = (ghost.className + ' card-ghost').trim();
+  ghost.style.left      = rect.left  + 'px';
+  ghost.style.top       = rect.top   + 'px';
+  ghost.style.width     = rect.width + 'px';
+  ghost.style.transform = 'scale(1.025)';
+  ghost.style.animation = 'none'; // prevent card-in fade-in on clone
+  document.body.appendChild(ghost);
+
+  card.style.visibility = 'hidden';
+
+  _drag = {
+    card, ghost, originalIndex, otherCards, naturalPositions,
+    cardWidth:   rect.width,
+    targetIndex: originalIndex,
+    offsetX: e.clientX - rect.left,
+    offsetY: e.clientY - rect.top,
+  };
+
+  document.addEventListener('pointermove', onDragMove);
+  document.addEventListener('pointerup',   onDragDrop);
+}
+
+function onDragMove(e) {
+  if (!_drag) return;
+  const { ghost, card, originalIndex, otherCards, naturalPositions, cardWidth, offsetX, offsetY } = _drag;
+
+  ghost.style.left = (e.clientX - offsetX) + 'px';
+  ghost.style.top  = (e.clientY - offsetY) + 'px';
+
+  // Determine target slot among otherCards using snapshotted natural positions
+  const ghostMidX = e.clientX - offsetX + cardWidth / 2;
+  let targetIndex = otherCards.length;
+  for (let i = 0; i < otherCards.length; i++) {
+    if (ghostMidX < naturalPositions[i] + cardWidth / 2) {
+      targetIndex = i;
+      break;
+    }
+  }
+
+  if (_drag.targetIndex === targetIndex) return;
+  _drag.targetIndex = targetIndex;
+
+  // For each otherCard, compute its slot in the current layout vs the target layout.
+  // naturalSlot: its flex slot now (invisible dragged card still occupies originalIndex)
+  // finalSlot:   its flex slot after drop (dragged card occupies targetIndex)
+  const gap = 16;
+  otherCards.forEach((c, i) => {
+    const naturalSlot = i < originalIndex ? i : i + 1;
+    const finalSlot   = i < targetIndex   ? i : i + 1;
+    const dx = (finalSlot - naturalSlot) * (cardWidth + gap);
+    c.style.transition = 'transform 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+    c.style.transform  = dx ? `translateX(${dx}px)` : '';
+  });
+}
+
+function onDragDrop() {
+  if (!_drag) return;
+  const { card, ghost, otherCards, targetIndex } = _drag;
+  const canvas = document.getElementById('canvas');
+  const addBtn = document.getElementById('add-req-btn');
+
+  // Snap transforms off before DOM reorder to avoid any flash
+  otherCards.forEach(c => { c.style.transition = 'none'; c.style.transform = ''; c.style.animation = 'none'; });
+
+  const insertBefore = otherCards[targetIndex] || addBtn;
+  canvas.insertBefore(card, insertBefore);
+  card.style.visibility = '';
+  ghost.remove();
+
+  document.removeEventListener('pointermove', onDragMove);
+  document.removeEventListener('pointerup',   onDragDrop);
+  _drag = null;
 }
 
 // ── Form validation ────────────────────────────────────────────────────────
@@ -955,6 +1092,7 @@ async function generateAll() {
   const initials   = getRsstVal('subject_initials').trim();
   const rsstBase   = rsstTmpl.replace(/\.pdf$/i, '') || 'RSST';
   const rsstName   = initials ? `${rsstBase} ${initials}` : rsstBase;
+  const folderName = initials ? `${initials} - ${rsstBase}` : rsstBase;
 
   const rsstFields = {};
   ['collection_date','collection_time','study_subject_id','subject_initials','mrn'].forEach(fid => {
@@ -964,7 +1102,7 @@ async function generateAll() {
 
   const reqForms = [];
   document.querySelectorAll('.card.req-card').forEach(card => {
-    const cid  = card.id.replace('card-', '');
+    const cid      = card.id.replace('card-', '');
     const sel      = document.getElementById(`sel-${cid}`);
     const tmpl     = sel ? sel.value : '';
     const tmplBase = tmpl.replace(/\.pdf$/i, '') || 'Req';
@@ -986,21 +1124,14 @@ async function generateAll() {
     const resp = await fetch('/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ rsst_template: rsstTmpl, rsst_name: rsstName, rsst_fields: rsstFields, req_forms: reqForms }),
+      body: JSON.stringify({ rsst_template: rsstTmpl, rsst_name: rsstName, rsst_fields: rsstFields, req_forms: reqForms, folder_name: folderName }),
     });
 
     if (!resp.ok) { toast(`Error ${resp.status}: ${resp.statusText}`); return; }
 
-    const blob = await resp.blob();
-    const url  = URL.createObjectURL(blob);
-    const a    = Object.assign(document.createElement('a'), { href: url, download: 'generated.zip' });
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-
+    const data = await resp.json();
     const n = (rsstTmpl ? 1 : 0) + reqForms.filter(r => r.template).length;
-    toast(`✓ Downloaded ${n} form${n !== 1 ? 's' : ''}.`);
+    toast(`Saved ${n} form${n !== 1 ? 's' : ''} to Desktop/${data.folder_name}`);
   } catch (e) {
     toast(`Error: ${e.message}`);
   } finally {
