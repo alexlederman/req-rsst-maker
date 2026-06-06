@@ -1,6 +1,8 @@
 import os
+import sys
 import json
 import time
+import subprocess
 from datetime import datetime
 
 from flask import Flask, render_template, request, send_from_directory, abort, jsonify
@@ -14,7 +16,34 @@ ASSETS_DIR     = os.path.normpath(os.path.join(os.path.dirname(__file__), 'asset
 PATIENTS_FILE  = os.path.join(os.path.dirname(__file__), 'patients.json')
 RSST_DIR = os.path.join(TEMPLATES_DIR, 'RSST')
 REQ_DIR  = os.path.join(TEMPLATES_DIR, 'Req')
-DESKTOP  = os.path.expanduser('~/Desktop')
+
+def pick_folder():
+    """Show a native folder picker. Returns chosen path or None if cancelled."""
+    try:
+        if sys.platform == 'darwin':
+            result = subprocess.run(
+                ['osascript', '-e',
+                 'POSIX path of (choose folder with prompt "Choose where to save the PDFs:")'],
+                capture_output=True, text=True, timeout=120
+            )
+            path = result.stdout.strip().rstrip('/')
+            return path if result.returncode == 0 and path else None
+        elif sys.platform == 'win32':
+            ps = (
+                'Add-Type -AssemblyName System.Windows.Forms; '
+                '$d = New-Object System.Windows.Forms.FolderBrowserDialog; '
+                '$d.Description = "Choose where to save the PDFs"; '
+                '$d.UseDescriptionForTitle = $true; '
+                'if ($d.ShowDialog() -eq "OK") { Write-Output $d.SelectedPath }'
+            )
+            result = subprocess.run(
+                ['powershell', '-NoProfile', '-Command', ps],
+                capture_output=True, text=True, timeout=120
+            )
+            path = result.stdout.strip()
+            return path if result.returncode == 0 and path else None
+    except Exception:
+        return None
 
 # ── PDF field name mappings ────────────────────────────────────────────────
 RSST_MAP = {
@@ -116,9 +145,11 @@ def generate():
     rsst_name     = (data.get('rsst_name') or 'RSST').strip()
     rsst_fields   = data.get('rsst_fields', {})
     req_forms     = data.get('req_forms', [])
-    folder_name   = (data.get('folder_name') or rsst_name).strip()
 
-    out_dir = os.path.join(DESKTOP, folder_name)
+    out_dir = pick_folder()
+    if not out_dir:
+        return jsonify({'cancelled': True}), 200
+
     os.makedirs(out_dir, exist_ok=True)
     seen = set()
 
@@ -158,7 +189,7 @@ def generate():
         with open(os.path.join(out_dir, fname), 'wb') as f:
             f.write(pdf_bytes)
 
-    return jsonify({'folder': out_dir, 'folder_name': folder_name})
+    return jsonify({'folder': out_dir})
 
 
 @app.route('/patients', methods=['GET'])

@@ -1551,7 +1551,7 @@ async function generateAll() {
   const initials   = getRsstVal('subject_initials').trim();
   const rsstBase   = rsstTmpl.replace(/\.pdf$/i, '') || 'RSST';
   const rsstName   = initials ? `${rsstBase} ${initials}` : rsstBase;
-  const folderName = initials ? `${initials} - ${rsstBase}` : rsstBase;
+
 
   const rsstFields = {};
   ['collection_date','collection_time','study_subject_id','subject_initials','mrn'].forEach(fid => {
@@ -1582,14 +1582,15 @@ async function generateAll() {
     const resp = await fetch('/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ rsst_template: rsstTmpl, rsst_name: rsstName, rsst_fields: rsstFields, req_forms: reqForms, folder_name: folderName }),
+      body: JSON.stringify({ rsst_template: rsstTmpl, rsst_name: rsstName, rsst_fields: rsstFields, req_forms: reqForms }),
     });
 
     if (!resp.ok) { toast(`Error ${resp.status}: ${resp.statusText}`); return; }
 
     const data = await resp.json();
+    if (data.cancelled) { toast('Save cancelled.'); return; }
     const n = (rsstTmpl ? 1 : 0) + reqForms.filter(r => r.template).length;
-    toast(`Saved ${n} form${n !== 1 ? 's' : ''} to Desktop/${data.folder_name}`);
+    toast(`Saved ${n} PDF${n !== 1 ? 's' : ''} to ${data.folder}`);
   } catch (e) {
     toast(`Error: ${e.message}`);
   } finally {
