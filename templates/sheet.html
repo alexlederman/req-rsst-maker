@@ -91,41 +91,154 @@
       text-transform: uppercase;
     }
 
-    .patient-bar {
+    /* ── Patient dropdown ────────────────────────────────────────────────── */
+    .patient-bar { display: flex; align-items: center; gap: 6px; }
+
+    .patient-dropdown { position: relative; }
+
+    .patient-select-btn {
       display: flex;
       align-items: center;
-      gap: 6px;
-    }
-    .patient-select {
-      appearance: none;
-      -webkit-appearance: none;
-      background: var(--fh-white) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7' viewBox='0 0 12 7'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7a93' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 10px center;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 7px 28px 7px 10px;
-      font-family: var(--sans);
-      font-size: 13px;
-      color: var(--text);
-      outline: none;
-      min-width: 200px;
-      cursor: pointer;
-    }
-    .patient-select:focus { border-color: var(--fh-teal); }
-    .btn-patient-save, .btn-patient-delete {
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 7px 12px;
-      font-family: var(--sans);
-      font-size: 13px;
-      cursor: pointer;
+      gap: 8px;
       background: var(--fh-white);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 7px 10px;
+      font-family: var(--sans);
+      font-size: 13px;
       color: var(--text);
-      transition: background .15s, border-color .15s, color .15s;
-      white-space: nowrap;
+      cursor: pointer;
+      min-width: 200px;
+      justify-content: space-between;
+      outline: none;
+      transition: border-color .15s;
     }
-    .btn-patient-save:hover  { background: var(--req-soft); border-color: var(--fh-teal); color: var(--fh-teal); }
-    .btn-patient-delete:hover:not(:disabled) { background: #fdf0ef; border-color: var(--danger); color: var(--danger); }
-    .btn-patient-delete:disabled { opacity: .35; cursor: default; }
+    .patient-select-btn:hover { border-color: #bbb; }
+    .patient-select-btn.open  { border-color: var(--fh-teal); }
+    .patient-sel-label { flex: 1; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .patient-sel-label.placeholder { color: var(--muted); }
+    .patient-chevron { flex-shrink: 0; color: var(--muted); transition: transform .15s; }
+    .patient-select-btn.open .patient-chevron { transform: rotate(180deg); }
+
+    .patient-dropdown-panel {
+      display: none;
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      box-shadow: var(--shadow);
+      z-index: 50;
+      overflow: hidden;
+    }
+    .patient-dropdown-panel.open { display: block; }
+
+    .patient-option {
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--text);
+      white-space: nowrap;
+      transition: background .1s;
+      user-select: none;
+    }
+    .patient-option { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--muted); }
+    .patient-option:hover { background: var(--bg); }
+    .patient-option.active { color: var(--text); font-weight: 500; }
+    .patient-option .option-check { flex-shrink: 0; color: var(--fh-teal); visibility: hidden; }
+    .patient-option.active .option-check { visibility: visible; }
+
+    .patient-dropdown-empty {
+      padding: 10px 12px;
+      font-size: 12.5px;
+      color: var(--muted);
+    }
+    .patient-dropdown-divider { border: none; border-top: 1px solid var(--border-light); margin: 0; }
+    .patient-dropdown-manage-btn {
+      display: block;
+      width: 100%;
+      padding: 9px 12px;
+      font-family: var(--sans);
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--muted);
+      background: none;
+      border: none;
+      text-align: left;
+      cursor: pointer;
+      transition: color .15s, background .15s;
+    }
+    .patient-dropdown-manage-btn:hover { color: var(--fh-teal); background: var(--req-soft); }
+
+    /* ── Manage Patients modal ───────────────────────────────────────────── */
+    .manage-modal { width: 460px; }
+
+    .manage-toolbar {
+      padding: 12px;
+      border-bottom: 1px solid var(--border-light);
+      display: flex;
+      justify-content: flex-end;
+    }
+    .manage-patient-list {
+      max-height: 340px;
+      overflow-y: auto;
+    }
+    .manage-patient-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border-light);
+      transition: background .1s;
+    }
+    .manage-patient-row:last-child { border-bottom: none; }
+    .manage-patient-row:hover { background: var(--bg); }
+    .manage-patient-info { flex: 1; min-width: 0; }
+    .manage-patient-name { font-size: 13px; font-weight: 500; color: var(--text); }
+    .manage-patient-sub  { font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+    .manage-patient-actions { display: flex; gap: 5px; flex-shrink: 0; }
+
+    .btn-icon {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      width: 28px; height: 28px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      color: var(--muted);
+      transition: border-color .15s, color .15s, background .15s;
+      flex-shrink: 0;
+    }
+    .btn-icon:hover        { border-color: #bbb; color: var(--text); background: var(--bg); }
+    .btn-icon.danger:hover { border-color: var(--danger); color: var(--danger); background: #fdf0ef; }
+
+    .manage-empty {
+      padding: 32px 20px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .manage-edit-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      border-bottom: 1px solid var(--border-light);
+    }
+    .btn-back {
+      background: none; border: none; cursor: pointer;
+      font-family: var(--sans);
+      color: var(--muted);
+      display: flex; align-items: center; gap: 5px;
+      padding: 0;
+      transition: color .15s;
+    }
+    .btn-back:hover { color: var(--text); }
+    .btn-back svg { flex-shrink: 0; }
+    .manage-edit-title { font-size: 14px; font-weight: 600; color: var(--text); }
 
     .btn-generate {
       display: flex;
@@ -439,7 +552,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 16px 20px 12px;
+      padding: 12px;
       border-bottom: 1px solid var(--border-light);
     }
     .modal-title {
@@ -457,12 +570,12 @@
       padding: 0 2px;
     }
     .modal-close:hover { color: var(--text); }
-    .modal-body { padding: 20px 20px 8px; }
+    .modal-body { padding: 12px; }
     .modal-footer {
       display: flex;
       justify-content: flex-end;
       gap: 8px;
-      padding: 12px 20px 20px;
+      padding: 12px;
     }
     .btn-modal-cancel {
       background: none;
@@ -526,11 +639,19 @@
     <span class="app-wordmark-title">Form Creator</span>
   </div>
   <div class="patient-bar">
-    <select class="patient-select" id="patient-sel" onchange="selectPatient()">
-      <option value="" disabled selected>Select Patient</option>
-    </select>
-    <button class="btn-patient-save" onclick="openNewPatientModal()" title="Add a new patient">New Patient</button>
-    <button class="btn-patient-delete" id="del-patient-btn" onclick="deletePatient()" title="Remove selected patient" disabled>Remove</button>
+    <div class="patient-dropdown" id="patient-dropdown">
+      <button class="patient-select-btn" id="patient-sel-btn" onclick="togglePatientDropdown()">
+        <span class="patient-sel-label placeholder" id="patient-sel-label">Select Patient</span>
+        <svg class="patient-chevron" width="12" height="7" viewBox="0 0 12 7" fill="none">
+          <path d="M1 1l5 5 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <div class="patient-dropdown-panel" id="patient-dropdown-panel">
+        <div id="patient-dropdown-options"></div>
+        <hr class="patient-dropdown-divider">
+        <button class="patient-dropdown-manage-btn" onclick="closePatientDropdown(); openManagePatientsModal()">Manage Patients</button>
+      </div>
+    </div>
   </div>
   <button class="btn-generate" id="gen-btn" onclick="generateAll()" disabled>
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -574,31 +695,51 @@
 
 <div class="toast" id="toast"></div>
 
-<!-- New Patient Modal -->
-<div class="modal-overlay" id="modal-overlay" onclick="closeNewPatientModal()">
-  <div class="modal" onclick="event.stopPropagation()">
-    <div class="modal-header">
-      <span class="modal-title">New Patient</span>
-      <button class="modal-close" onclick="closeNewPatientModal()">×</button>
-    </div>
-    <div class="modal-body">
-      <div class="field">
-        <div class="field-label">Initials</div>
-        <input class="field-input" type="text" id="new-patient-initials" placeholder="e.g. JD" autocomplete="off">
+<!-- Manage Patients Modal -->
+<div class="modal-overlay" id="manage-modal-overlay" onclick="closeManagePatientsModal()">
+  <div class="modal manage-modal" onclick="event.stopPropagation()">
+
+    <!-- List view -->
+    <div id="manage-list-view">
+      <div class="modal-header" style="border-bottom:none">
+        <span class="modal-title">Manage Patients</span>
+        <button class="modal-close" onclick="closeManagePatientsModal()">×</button>
       </div>
-      <div class="field">
-        <div class="field-label">Subject ID</div>
-        <input class="field-input" type="text" id="new-patient-subject-id" placeholder="Subject ID" autocomplete="off">
-      </div>
-      <div class="field">
-        <div class="field-label">Patient Identifier</div>
-        <textarea class="field-textarea" id="new-patient-identifier" rows="4" placeholder="MRN&#10;DOB: AGE M/F&#10;&#10;NAME"></textarea>
+      <div class="manage-patient-list" id="manage-patient-list"></div>
+      <div class="modal-footer">
+        <button class="btn-modal-save" style="font-size:12.5px;padding:6px 14px" onclick="openManageEditView(null)">New Patient</button>
       </div>
     </div>
-    <div class="modal-footer">
-      <button class="btn-modal-cancel" onclick="closeNewPatientModal()">Cancel</button>
-      <button class="btn-modal-save" onclick="saveNewPatient()">Save Patient</button>
+
+    <!-- Edit / create view -->
+    <div id="manage-edit-view" style="display:none">
+      <div class="manage-edit-header">
+        <button class="btn-back" onclick="closeManageEditView()">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="manage-edit-title" id="manage-edit-title">New Patient</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="manage-edit-id">
+        <div class="field">
+          <div class="field-label">Initials</div>
+          <input class="field-input" type="text" id="manage-edit-initials" placeholder="e.g. JD" autocomplete="off">
+        </div>
+        <div class="field">
+          <div class="field-label">Subject ID</div>
+          <input class="field-input" type="text" id="manage-edit-subject-id" placeholder="Subject ID" autocomplete="off">
+        </div>
+        <div class="field">
+          <div class="field-label">Patient Identifier</div>
+          <textarea class="field-textarea" id="manage-edit-identifier" rows="4" placeholder="MRN&#10;DOB: AGE M/F&#10;&#10;NAME"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-modal-cancel" onclick="closeManageEditView()">Cancel</button>
+        <button class="btn-modal-save" onclick="saveManagePatient()">Save Patient</button>
+      </div>
     </div>
+
   </div>
 </div>
 
@@ -682,6 +823,7 @@ function makeField(label, inputEl, badgeHtml) {
 
 // ── Patient database ──────────────────────────────────────────────────────
 let patients = [];
+let selectedPatientId = '';
 
 function fitTextarea(ta) {
   ta.style.height = 'auto';
@@ -692,42 +834,79 @@ function patientLabel(patient) {
   return patient.initials || (patient.identifier || '').split('\n')[0].trim() || 'Unknown';
 }
 
-function renderPatientSelect() {
-  const sel = document.getElementById('patient-sel');
-  const cur = sel.value;
-  sel.innerHTML = `<option value="" disabled>Select Patient</option>`;
-  patients.forEach(p => {
-    const o = new Option(patientLabel(p), p.id);
-    sel.appendChild(o);
-  });
-  sel.value = cur;
-  document.getElementById('del-patient-btn').disabled = !sel.value;
+// ── Custom patient dropdown ────────────────────────────────────────────────
+function renderPatientDropdown() {
+  const opts = document.getElementById('patient-dropdown-options');
+  const checkSvg = `<svg class="option-check" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7l4 4 6-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  if (patients.length === 0) {
+    opts.innerHTML = `<div class="patient-dropdown-empty">No patients yet</div>`;
+  } else {
+    opts.innerHTML = patients.map(p =>
+      `<div class="patient-option${p.id === selectedPatientId ? ' active' : ''}"
+            onclick="selectPatient('${p.id}')">${patientLabel(p)}${checkSvg}</div>`
+    ).join('');
+  }
+  // Update button label
+  const lbl = document.getElementById('patient-sel-label');
+  const btn = document.getElementById('patient-sel-btn');
+  const patient = patients.find(p => p.id === selectedPatientId);
+  if (patient) {
+    lbl.textContent = patientLabel(patient);
+    lbl.classList.remove('placeholder');
+  } else {
+    lbl.textContent = 'Select Patient';
+    lbl.classList.add('placeholder');
+  }
+}
+
+function togglePatientDropdown() {
+  const panel = document.getElementById('patient-dropdown-panel');
+  const btn   = document.getElementById('patient-sel-btn');
+  const open  = panel.classList.toggle('open');
+  btn.classList.toggle('open', open);
+  if (open) {
+    // Close on outside click
+    setTimeout(() => document.addEventListener('click', _closeDropdownOutside, { once: true }), 0);
+  }
+}
+
+function _closeDropdownOutside(e) {
+  if (!document.getElementById('patient-dropdown').contains(e.target)) {
+    closePatientDropdown();
+  }
+}
+
+function closePatientDropdown() {
+  document.getElementById('patient-dropdown-panel').classList.remove('open');
+  document.getElementById('patient-sel-btn').classList.remove('open');
 }
 
 async function loadPatients() {
   const resp = await fetch('/patients');
   patients = await resp.json();
-  renderPatientSelect();
+  renderPatientDropdown();
 }
 
-function selectPatient() {
-  const sel = document.getElementById('patient-sel');
-  const pid = sel.value;
-  document.getElementById('del-patient-btn').disabled = !pid;
+function selectPatient(pid) {
+  selectedPatientId = pid || '';
+  closePatientDropdown();
+  renderPatientDropdown();
+
   if (!pid) {
     document.getElementById('canvas').style.display = 'none';
     document.getElementById('empty-state').style.display = 'flex';
+    validateForm();
     return;
   }
   document.getElementById('canvas').style.display = 'flex';
   document.getElementById('empty-state').style.display = 'none';
+
   const patient = patients.find(p => p.id === pid);
   if (!patient) return;
 
   const identifier = patient.identifier;
   const mrn = (identifier.split('\n')[0] || '').trim();
 
-  // Fill MRN, Subject Initials, and Subject ID in RSST card
   const mrnInp = document.getElementById('rsst-mrn');
   if (mrnInp) mrnInp.value = mrn;
   const initialsInp = document.getElementById('rsst-subject_initials');
@@ -735,7 +914,6 @@ function selectPatient() {
   const ssidInp = document.getElementById('rsst-study_subject_id');
   if (ssidInp) { ssidInp.value = patient.subject_id || ''; updateMirrors('study_subject_id'); }
 
-  // Fill Patient Identifier in all Req cards
   document.querySelectorAll('.card.req-card').forEach(card => {
     const cid = card.id.replace('card-', '');
     const ta  = document.getElementById(`pid-${cid}`);
@@ -744,50 +922,110 @@ function selectPatient() {
   validateForm();
 }
 
-function openNewPatientModal() {
-  document.getElementById('new-patient-initials').value = '';
-  document.getElementById('new-patient-subject-id').value = '';
-  document.getElementById('new-patient-identifier').value = '';
-  document.getElementById('modal-overlay').classList.add('open');
-  document.getElementById('new-patient-initials').focus();
+// ── Manage Patients modal ─────────────────────────────────────────────────
+function openManagePatientsModal() {
+  renderManagePatientsList();
+  document.getElementById('manage-list-view').style.display = '';
+  document.getElementById('manage-edit-view').style.display = 'none';
+  document.getElementById('manage-modal-overlay').classList.add('open');
 }
 
-function closeNewPatientModal() {
-  document.getElementById('modal-overlay').classList.remove('open');
+function closeManagePatientsModal() {
+  document.getElementById('manage-modal-overlay').classList.remove('open');
 }
 
-async function saveNewPatient() {
-  const initials   = document.getElementById('new-patient-initials').value.trim();
-  const subject_id = document.getElementById('new-patient-subject-id').value.trim();
-  const identifier = document.getElementById('new-patient-identifier').value.trim();
+function renderManagePatientsList() {
+  const list = document.getElementById('manage-patient-list');
+  if (patients.length === 0) {
+    list.innerHTML = `<div class="manage-empty">No patients yet. Add one to get started.</div>`;
+    return;
+  }
+  list.innerHTML = patients.map(p => {
+    const sub = [p.subject_id, (p.identifier || '').split('\n')[0]].filter(Boolean).join(' · ');
+    return `
+      <div class="manage-patient-row">
+        <div class="manage-patient-info">
+          <div class="manage-patient-name">${patientLabel(p)}</div>
+          ${sub ? `<div class="manage-patient-sub">${sub}</div>` : ''}
+        </div>
+        <div class="manage-patient-actions">
+          <button class="btn-icon" title="Edit" onclick="openManageEditView('${p.id}')">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M9.5 1.5l2 2-7 7H2.5v-2l7-7z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button class="btn-icon danger" title="Delete" onclick="deleteManagePatient('${p.id}')">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 3.5h9M5 3.5V2.5h3v1M5.5 6v3.5M7.5 6v3.5M3 3.5l.5 7h6l.5-7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function openManageEditView(pid) {
+  const isNew = !pid;
+  document.getElementById('manage-edit-title').textContent = isNew ? 'New Patient' : 'Edit Patient';
+  document.getElementById('manage-edit-id').value         = pid || '';
+  const patient = pid ? patients.find(p => p.id === pid) : null;
+  document.getElementById('manage-edit-initials').value    = patient?.initials    || '';
+  document.getElementById('manage-edit-subject-id').value  = patient?.subject_id  || '';
+  document.getElementById('manage-edit-identifier').value  = patient?.identifier  || '';
+  document.getElementById('manage-list-view').style.display = 'none';
+  document.getElementById('manage-edit-view').style.display = '';
+  document.getElementById('manage-edit-initials').focus();
+}
+
+function closeManageEditView() {
+  document.getElementById('manage-list-view').style.display = '';
+  document.getElementById('manage-edit-view').style.display = 'none';
+  renderManagePatientsList();
+}
+
+async function saveManagePatient() {
+  const pid        = document.getElementById('manage-edit-id').value;
+  const initials   = document.getElementById('manage-edit-initials').value.trim();
+  const subject_id = document.getElementById('manage-edit-subject-id').value.trim();
+  const identifier = document.getElementById('manage-edit-identifier').value.trim();
   if (!identifier) { toast('Patient identifier is required.'); return; }
 
-  const resp = await fetch('/patients', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ identifier, initials, subject_id }),
-  });
-  if (!resp.ok) { toast('Failed to save patient.'); return; }
-  const patient = await resp.json();
-  patients.push(patient);
-  renderPatientSelect();
-  document.getElementById('patient-sel').value = patient.id;
-  document.getElementById('del-patient-btn').disabled = false;
-  closeNewPatientModal();
-  selectPatient();
-  toast(`Patient saved: ${patientLabel(patient)}`);
+  if (pid) {
+    // Update existing
+    const resp = await fetch(`/patients/${pid}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identifier, initials, subject_id }),
+    });
+    if (!resp.ok) { toast('Failed to update patient.'); return; }
+    const updated = await resp.json();
+    const idx = patients.findIndex(p => p.id === pid);
+    if (idx !== -1) patients[idx] = updated;
+    if (selectedPatientId === pid) selectPatient(pid); // refresh cards
+    toast(`Updated: ${patientLabel(updated)}`);
+  } else {
+    // Create new
+    const resp = await fetch('/patients', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identifier, initials, subject_id }),
+    });
+    if (!resp.ok) { toast('Failed to save patient.'); return; }
+    const patient = await resp.json();
+    patients.push(patient);
+    selectPatient(patient.id);
+    toast(`Patient saved: ${patientLabel(patient)}`);
+  }
+  renderPatientDropdown();
+  closeManageEditView();
 }
 
-async function deletePatient() {
-  const sel = document.getElementById('patient-sel');
-  const pid = sel.value;
-  if (!pid) return;
-  const label = patientLabel(patients.find(p => p.id === pid) || {});
+async function deleteManagePatient(pid) {
+  const patient = patients.find(p => p.id === pid);
+  if (!patient) return;
+  const label = patientLabel(patient);
   const resp = await fetch(`/patients/${pid}`, { method: 'DELETE' });
   if (!resp.ok) { toast('Failed to remove patient.'); return; }
   patients = patients.filter(p => p.id !== pid);
-  renderPatientSelect();
-  selectPatient();
+  if (selectedPatientId === pid) selectPatient('');
+  renderPatientDropdown();
+  renderManagePatientsList();
   toast(`Removed: ${label}`);
 }
 

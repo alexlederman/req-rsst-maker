@@ -162,6 +162,20 @@ def add_patient():
     return jsonify(patient), 201
 
 
+@app.route('/patients/<patient_id>', methods=['PUT'])
+def update_patient(patient_id):
+    data = request.get_json(force=True)
+    patients = load_patients()
+    for p in patients:
+        if p['id'] == patient_id:
+            p['identifier'] = (data.get('identifier') or '').strip()
+            p['initials']   = (data.get('initials')   or '').strip()
+            p['subject_id'] = (data.get('subject_id') or '').strip()
+            save_patients(patients)
+            return jsonify(p)
+    abort(404)
+
+
 @app.route('/patients/<patient_id>', methods=['DELETE'])
 def delete_patient(patient_id):
     patients = [p for p in load_patients() if p['id'] != patient_id]
