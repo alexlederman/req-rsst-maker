@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import time
 import socket
@@ -8,12 +9,26 @@ from datetime import datetime
 from flask import Flask, render_template, request, send_from_directory, abort, jsonify
 from pdf_utils import get_fields_with_meta, fill_pdf
 
-app = Flask(__name__)
+
+def _bundled(relative_path):
+    """Path to a file bundled inside the exe (templates, assets)."""
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, relative_path)
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), relative_path)
+
+
+def _appdir(relative_path=''):
+    """Path relative to the exe/script directory (forms, patients.json)."""
+    base = os.path.dirname(sys.executable) if hasattr(sys, '_MEIPASS') else os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(base, relative_path) if relative_path else base
+
+
+app = Flask(__name__, template_folder=_bundled('templates'))
 app.secret_key = os.urandom(24)
 
-TEMPLATES_DIR  = os.path.normpath(os.path.join(os.path.dirname(__file__), 'forms'))
-ASSETS_DIR     = os.path.normpath(os.path.join(os.path.dirname(__file__), 'assets'))
-PATIENTS_FILE  = os.path.join(os.path.dirname(__file__), 'patients.json')
+TEMPLATES_DIR  = _appdir('forms')
+ASSETS_DIR     = _bundled('assets')
+PATIENTS_FILE  = _appdir('patients.json')
 RSST_DIR = os.path.join(TEMPLATES_DIR, 'RSST')
 REQ_DIR  = os.path.join(TEMPLATES_DIR, 'Req')
 DESKTOP  = os.path.expanduser('~/Desktop')
