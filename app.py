@@ -9,7 +9,7 @@ from pdf_utils import get_fields_with_meta, fill_pdf
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 
-TEMPLATES_DIR  = os.path.normpath(os.path.join(os.path.dirname(__file__), '..', 'Templates'))
+TEMPLATES_DIR  = os.path.normpath(os.path.join(os.path.dirname(__file__), 'Templates'))
 ASSETS_DIR     = os.path.normpath(os.path.join(os.path.dirname(__file__), '..', 'assets'))
 PATIENTS_FILE  = os.path.join(os.path.dirname(__file__), 'patients.json')
 RSST_DIR = os.path.join(TEMPLATES_DIR, 'RSST')
