@@ -1,6 +1,8 @@
 import os
 import json
 import time
+import socket
+import threading
 from datetime import datetime
 
 from flask import Flask, render_template, request, send_from_directory, abort, jsonify
@@ -219,4 +221,45 @@ def _unique(name, seen):
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port=8080)
+
+    def _find_free_port():
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind(('127.0.0.1', 0))
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            return s.getsockname()[1]
+
+    port = _find_free_port()
+    url  = f'http://127.0.0.1:{port}'
+
+    try:
+        import webview
+
+        def _run_flask():
+            app.run(host='127.0.0.1', port=port, debug=False, use_reloader=False)
+
+        threading.Thread(target=_run_flask, daemon=True).start()
+
+        def _wait_for_flask(timeout=10):
+            import urllib.request
+            deadline = time.time() + timeout
+            while time.time() < deadline:
+                try:
+                    urllib.request.urlopen(url, timeout=0.5)
+                    return
+                except Exception:
+                    time.sleep(0.05)
+
+        _wait_for_flask()
+
+        webview.create_window(
+            title='Form Creator',
+            url=url,
+            width=1400,
+            height=860,
+            resizable=True,
+        )
+        webview.start()
+
+    except ImportError:
+        # Fallback: pywebview not installed — run as normal browser app
+        app.run(debug=True, port=port)
