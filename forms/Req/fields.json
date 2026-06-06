@@ -1,0 +1,5 @@
+[
+  {"field": "Patient Indentifiers", "label": "Patient Identifier", "editable": true},
+  {"field": "Study Subject ID", "editable": true},
+  {"field": "Collection Window"}
+]
