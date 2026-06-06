@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Form Creator</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/fred_hutch.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -279,7 +280,6 @@
       background: var(--surface);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
-      overflow: hidden;
       animation: card-in .25s ease both;
     }
     @keyframes card-in {
@@ -319,14 +319,19 @@
     }
     .card-remove:hover { color: var(--danger); }
 
-    .field-tmpl select {
+    /* ── Template custom dropdown ─────────────────────────────────────── */
+    .tmpl-dropdown { position: relative; width: 100%; }
+
+    .tmpl-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
       width: 100%;
-      appearance: none;
-      -webkit-appearance: none;
-      background: var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7' viewBox='0 0 12 7'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239b9690' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 10px center;
+      background: var(--bg);
       border: 1px solid var(--border);
       border-radius: 6px;
-      padding: 7px 28px 7px 10px;
+      padding: 7px 10px;
       font-family: var(--sans);
       font-size: 12.5px;
       font-weight: 500;
@@ -334,9 +339,93 @@
       cursor: pointer;
       outline: none;
       transition: border-color .15s;
+      text-align: left;
     }
-    .field-tmpl select:focus { border-color: var(--rsst); }
-    .req-card .field-tmpl select:focus { border-color: var(--req); }
+    .tmpl-btn-label { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tmpl-btn-label.placeholder { color: var(--muted); font-weight: 400; }
+    .tmpl-chevron { flex-shrink: 0; color: var(--muted); transition: transform .15s; }
+    .tmpl-btn.open .tmpl-chevron { transform: rotate(180deg); }
+    .rsst-card .tmpl-btn:hover,
+    .rsst-card .tmpl-btn.open  { border-color: var(--rsst); }
+    .req-card  .tmpl-btn:hover,
+    .req-card  .tmpl-btn.open  { border-color: var(--req); }
+
+    .tmpl-panel {
+      display: none;
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      box-shadow: var(--shadow);
+      z-index: 40;
+    }
+    .tmpl-panel.open { display: block; }
+    .tmpl-panel > .tmpl-option:first-child,
+    .tmpl-panel > .tmpl-submenu-item:first-child { border-radius: 6px 6px 0 0; }
+    .tmpl-panel > .tmpl-option:last-child,
+    .tmpl-panel > .tmpl-submenu-item:last-child { border-radius: 0 0 6px 6px; }
+    .tmpl-panel > :only-child { border-radius: 6px; }
+
+    .tmpl-option {
+      height: 32px;
+      padding: 0 10px;
+      font-size: 12.5px;
+      color: var(--muted);
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: background .1s, color .1s;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      box-sizing: border-box;
+    }
+    .tmpl-option:hover { background: var(--bg); color: var(--text); }
+    .tmpl-option.active { color: var(--text); font-weight: 500; }
+    .tmpl-option .option-check { flex-shrink: 0; color: var(--fh-teal); visibility: hidden; }
+    .tmpl-option.active .option-check { visibility: visible; }
+
+    .tmpl-submenu-item {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      height: 32px;
+      padding: 0 10px;
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--text);
+      cursor: default;
+      user-select: none;
+      transition: background .1s;
+      box-sizing: border-box;
+    }
+    .tmpl-submenu-item:hover { background: var(--bg); }
+    .tmpl-submenu-item + .tmpl-submenu-item,
+    .tmpl-option + .tmpl-submenu-item { border-top: 1px solid var(--border-light); }
+    .tmpl-submenu-chevron { flex-shrink: 0; color: var(--muted); }
+
+    .tmpl-submenu-panel {
+      display: none;
+      position: absolute;
+      top: -1px;
+      left: 100%;
+      min-width: 180px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      box-shadow: var(--shadow);
+      z-index: 50;
+      overflow: hidden;
+    }
+    .tmpl-submenu-panel.flip-left { left: auto; right: 100%; }
+    .tmpl-submenu-item:hover > .tmpl-submenu-panel { display: block; }
 
     .card-name-input {
       width: 100%;
@@ -677,9 +766,7 @@
       </div>
       <div class="field-tmpl">
         <div class="field-label" style="margin-bottom:5px">Template</div>
-        <select id="rsst-tmpl" onchange="onRsstTmpl()">
-          <option value="" disabled selected style="color:var(--muted)">Select Template</option>
-        </select>
+        <div class="tmpl-dropdown" id="rsst-tmpl-dropdown"></div>
       </div>
     </div>
     <div class="card-body" id="rsst-body">
@@ -745,10 +832,15 @@
 
 <script>
 // ── Server data ────────────────────────────────────────────────────────────
-const RSST_FILES   = {{ rsst_files_json | safe }};
-const REQ_FILES    = {{ req_files_json | safe }};
+// Groups: [{group: str, files: [rel_path, ...]}, ...]
+const RSST_GROUPS  = {{ rsst_groups_json | safe }};
+const REQ_GROUPS   = {{ req_groups_json | safe }};
 const RSST_PREFILL = {{ rsst_prefills_json | safe }};
 const REQ_PREFILL  = {{ req_prefills_json | safe }};
+
+// Flat lists for convenience
+const RSST_FILES = RSST_GROUPS.flatMap(g => g.files);
+const REQ_FILES  = REQ_GROUPS.flatMap(g => g.files);
 
 const TODAY = (() => {
   const d = new Date();
@@ -808,6 +900,129 @@ function getRsstFieldValue(fid) {
 
 function makeMirrorLabel(text) {
   return `${text} <span class="badge-mirror">from RSST</span>`;
+}
+
+// ── Template dropdown builder ───────────────────────────────────────────────
+const _checkSvgTmpl = `<svg class="option-check" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7l4 4 6-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+function _makeTmplOption(rel, selectedVal, containerId, onChange) {
+  const label = rel.split('/').pop().replace(/\.pdf$/i, '');
+  const opt = document.createElement('div');
+  opt.className = `tmpl-option${rel === selectedVal ? ' active' : ''}`;
+  opt.dataset.value = rel;
+  opt.innerHTML = `<span>${label}</span>${_checkSvgTmpl}`;
+  opt.addEventListener('click', e => {
+    e.stopPropagation();
+    setTmplDropdownValue(containerId, rel);
+    onChange(rel);
+  });
+  return opt;
+}
+
+function buildTmplDropdown(containerId, groups, selectedVal, onChange) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+
+  const dropId  = containerId + '-panel';
+  const btnId   = containerId + '-btn';
+  const labelId = containerId + '-label';
+
+  // Button
+  const btn = document.createElement('button');
+  btn.className = 'tmpl-btn';
+  btn.id = btnId;
+  btn.type = 'button';
+  btn.innerHTML = `<span class="tmpl-btn-label${selectedVal ? '' : ' placeholder'}" id="${labelId}">${selectedVal ? selectedVal.split('/').pop().replace(/\.pdf$/i,'') : 'Select Template'}</span><svg class="tmpl-chevron" width="12" height="7" viewBox="0 0 12 7" fill="none"><path d="M1 1l5 5 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+  // Panel
+  const panel = document.createElement('div');
+  panel.className = 'tmpl-panel';
+  panel.id = dropId;
+
+  const rootGroup = groups.find(g => g.group === '');
+  const subGroups = groups.filter(g => g.group !== '');
+
+  // Root-level files (no group) — plain options
+  if (rootGroup) {
+    rootGroup.files.forEach(rel => {
+      panel.appendChild(_makeTmplOption(rel, selectedVal, containerId, onChange));
+    });
+  }
+
+  // Grouped files — flyout submenu items
+  subGroups.forEach(({group, files}) => {
+    const item = document.createElement('div');
+    item.className = 'tmpl-submenu-item';
+    item.innerHTML = `<span>${group}</span><svg class="tmpl-submenu-chevron" width="6" height="10" viewBox="0 0 6 10" fill="none"><path d="M1 1l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+    const subPanel = document.createElement('div');
+    subPanel.className = 'tmpl-submenu-panel';
+    files.forEach(rel => {
+      subPanel.appendChild(_makeTmplOption(rel, selectedVal, containerId, onChange));
+    });
+
+    // Flip submenu left if it would overflow the viewport
+    item.addEventListener('mouseenter', () => {
+      const rect = subPanel.getBoundingClientRect();
+      subPanel.classList.toggle('flip-left', rect.right > window.innerWidth - 8);
+    });
+
+    item.appendChild(subPanel);
+    panel.appendChild(item);
+  });
+
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    const isOpen = panel.classList.toggle('open');
+    btn.classList.toggle('open', isOpen);
+    if (isOpen) {
+      setTimeout(() => document.addEventListener('click', function _c(ev) {
+        if (!container.contains(ev.target)) { closeTmplDropdown(containerId); }
+        document.removeEventListener('click', _c);
+      }), 0);
+    }
+  });
+
+  container.appendChild(btn);
+  container.appendChild(panel);
+}
+
+function setTmplDropdownValue(containerId, val) {
+  const panel   = document.getElementById(containerId + '-panel');
+  const labelEl = document.getElementById(containerId + '-label');
+  const btn     = document.getElementById(containerId + '-btn');
+  if (!panel || !labelEl) return;
+  // Update options active state
+  panel.querySelectorAll('.tmpl-option').forEach(opt => {
+    opt.classList.toggle('active', opt.dataset.value === val);
+  });
+  // Update button label
+  labelEl.textContent = val ? val.split('/').pop().replace(/\.pdf$/i,'') : 'Select Template';
+  labelEl.classList.toggle('placeholder', !val);
+  // Store value on container
+  document.getElementById(containerId).dataset.value = val || '';
+  closeTmplDropdown(containerId);
+}
+
+function getTmplDropdownValue(containerId) {
+  return document.getElementById(containerId)?.dataset.value || '';
+}
+
+function closeTmplDropdown(containerId) {
+  document.getElementById(containerId + '-panel')?.classList.remove('open');
+  document.getElementById(containerId + '-btn')?.classList.remove('open');
+}
+
+function disableTmplOption(containerId, val, disabled) {
+  const panel = document.getElementById(containerId + '-panel');
+  if (!panel) return;
+  panel.querySelectorAll('.tmpl-option').forEach(opt => {
+    if (opt.dataset.value === val) {
+      opt.style.opacity = disabled ? '.35' : '';
+      opt.style.pointerEvents = disabled ? 'none' : '';
+    }
+  });
 }
 
 function makeField(label, inputEl, badgeHtml) {
@@ -1031,13 +1246,13 @@ async function deleteManagePatient(pid) {
 
 // ── Init ───────────────────────────────────────────────────────────────────
 function init() {
-  // Populate RSST dropdown
-  const sel = document.getElementById('rsst-tmpl');
-  RSST_FILES.forEach(f => {
-    const o = new Option(f.replace(/\.pdf$/i, ''), f);
-    sel.appendChild(o);
+  // Build RSST custom dropdown
+  const autoSelect = RSST_FILES.length === 1 ? RSST_FILES[0] : '';
+  buildTmplDropdown('rsst-tmpl-dropdown', RSST_GROUPS, autoSelect, val => {
+    document.getElementById('rsst-tmpl-dropdown').dataset.value = val;
+    onRsstTmpl();
   });
-  if (RSST_FILES.length === 1) { sel.value = RSST_FILES[0]; }
+  if (autoSelect) document.getElementById('rsst-tmpl-dropdown').dataset.value = autoSelect;
 
   // Build RSST field inputs
   const body = document.getElementById('rsst-body');
@@ -1069,7 +1284,7 @@ function init() {
     }
   });
 
-  if (RSST_FILES.length === 1) onRsstTmpl();
+  if (autoSelect) onRsstTmpl();
 
   // Start with one Req card
   addReqCard(REQ_FILES.length === 1 ? REQ_FILES[0] : '');
@@ -1078,6 +1293,10 @@ function init() {
 // ── RSST template change ───────────────────────────────────────────────────
 function onRsstTmpl() {
   validateForm();
+}
+
+function getRsstTmpl() {
+  return getTmplDropdownValue('rsst-tmpl-dropdown');
 }
 
 // ── Add Req card ───────────────────────────────────────────────────────────
@@ -1099,7 +1318,7 @@ function addReqCard(defaultTmpl) {
   hdrTop.appendChild(document.createElement('span')).className = 'card-badge';
   hdrTop.querySelector('.card-badge').textContent = 'Req';
   card.addEventListener('pointerdown', e => {
-    if (e.target.closest('input, select, textarea, button')) return;
+    if (e.target.closest('input, select, textarea, button, .tmpl-dropdown')) return;
     startCardDrag(e, card);
   });
   const removeBtn = document.createElement('button');
@@ -1117,15 +1336,11 @@ function addReqCard(defaultTmpl) {
   tmplLbl.style.marginBottom = '5px';
   tmplLbl.textContent = 'Template';
   tmplWrap.appendChild(tmplLbl);
-  const tmplSel = document.createElement('select');
-  tmplSel.id = `sel-${cid}`;
-  tmplSel.innerHTML =
-    `<option value="" disabled selected style="color:var(--muted)">Select Template</option>` +
-    REQ_FILES.map(f =>
-      `<option value="${f}"${f === defaultTmpl ? ' selected' : ''}>${f.replace(/\.pdf$/i,'')}</option>`
-    ).join('');
-  tmplSel.addEventListener('change', () => { onReqTmpl(cid); updateReqTemplateOptions(); validateForm(); });
-  tmplWrap.appendChild(tmplSel);
+  const tmplDropId = `sel-${cid}`;
+  const tmplDropEl = document.createElement('div');
+  tmplDropEl.className = 'tmpl-dropdown';
+  tmplDropEl.id = tmplDropId;
+  tmplWrap.appendChild(tmplDropEl);
   hdr.appendChild(tmplWrap);
 
 
@@ -1165,6 +1380,15 @@ function addReqCard(defaultTmpl) {
   const addBtn = document.getElementById('add-req-btn');
   document.getElementById('canvas').insertBefore(card, addBtn);
 
+  // Build the dropdown after card is in DOM
+  buildTmplDropdown(tmplDropId, REQ_GROUPS, defaultTmpl, val => {
+    document.getElementById(tmplDropId).dataset.value = val;
+    onReqTmpl(cid);
+    updateReqTemplateOptions();
+    validateForm();
+  });
+  if (defaultTmpl) document.getElementById(tmplDropId).dataset.value = defaultTmpl;
+
   updateReqTemplateOptions();
   if (defaultTmpl) onReqTmpl(cid);
 }
@@ -1187,17 +1411,14 @@ function updateReqTemplateOptions() {
   const selected = new Set();
   document.querySelectorAll('.card.req-card').forEach(card => {
     const cid = card.id.replace('card-', '');
-    const sel = document.getElementById(`sel-${cid}`);
-    if (sel && sel.value) selected.add(sel.value);
+    const val = getTmplDropdownValue(`sel-${cid}`);
+    if (val) selected.add(val);
   });
   document.querySelectorAll('.card.req-card').forEach(card => {
     const cid = card.id.replace('card-', '');
-    const sel = document.getElementById(`sel-${cid}`);
-    if (!sel) return;
-    const cur = sel.value;
-    Array.from(sel.options).forEach(opt => {
-      if (!opt.value) return;
-      opt.disabled = opt.value !== cur && selected.has(opt.value);
+    const cur = getTmplDropdownValue(`sel-${cid}`);
+    REQ_FILES.forEach(f => {
+      disableTmplOption(`sel-${cid}`, f, f !== cur && selected.has(f));
     });
   });
 }
@@ -1302,7 +1523,7 @@ function onDragDrop() {
 // ── Form validation ────────────────────────────────────────────────────────
 function validateForm() {
   const rsstFields = ['collection_date','collection_time','study_subject_id','subject_initials','mrn'];
-  const rsstTmpl = document.getElementById('rsst-tmpl')?.value;
+  const rsstTmpl = getRsstTmpl();
   if (!rsstTmpl) { document.getElementById('gen-btn').disabled = true; return; }
 
   for (const fid of rsstFields) {
@@ -1316,7 +1537,7 @@ function validateForm() {
 
   for (const card of reqCards) {
     const cid  = card.id.replace('card-', '');
-    const tmpl = document.getElementById(`sel-${cid}`)?.value;
+    const tmpl = getTmplDropdownValue(`sel-${cid}`);
     const pid  = document.getElementById(`pid-${cid}`)?.value?.trim();
     if (!tmpl || !pid) { document.getElementById('gen-btn').disabled = true; return; }
   }
@@ -1326,7 +1547,7 @@ function validateForm() {
 
 // ── Generate ───────────────────────────────────────────────────────────────
 async function generateAll() {
-  const rsstTmpl   = document.getElementById('rsst-tmpl').value;
+  const rsstTmpl   = getRsstTmpl();
   const initials   = getRsstVal('subject_initials').trim();
   const rsstBase   = rsstTmpl.replace(/\.pdf$/i, '') || 'RSST';
   const rsstName   = initials ? `${rsstBase} ${initials}` : rsstBase;
@@ -1341,9 +1562,8 @@ async function generateAll() {
   const reqForms = [];
   document.querySelectorAll('.card.req-card').forEach(card => {
     const cid      = card.id.replace('card-', '');
-    const sel      = document.getElementById(`sel-${cid}`);
-    const tmpl     = sel ? sel.value : '';
-    const tmplBase = tmpl.replace(/\.pdf$/i, '') || 'Req';
+    const tmpl     = getTmplDropdownValue(`sel-${cid}`);
+    const tmplBase = tmpl.split('/').pop().replace(/\.pdf$/i, '') || 'Req';
     const name     = initials ? `${tmplBase} ${initials}` : tmplBase;
     const pid      = (document.getElementById(`pid-${cid}`)?.value || '').trim();
     reqForms.push({ template: tmpl, name, patient_identifier: pid });

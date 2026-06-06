@@ -44,23 +44,46 @@ def save_patients(patients):
         json.dump(patients, f, indent=2)
 
 
-def list_pdfs(folder):
+def list_pdfs_grouped(folder):
+    """Return [{'group': str, 'files': [relative_path, ...]}].
+    Root-level PDFs have group=''. Subdirectory PDFs have group=dirname.
+    relative_path is 'file.pdf' or 'subdir/file.pdf'.
+    """
     if not os.path.isdir(folder):
         return []
-    return sorted(f for f in os.listdir(folder)
-                  if f.lower().endswith('.pdf') and not f.startswith('.'))
+    result = []
+    root_files = sorted(
+        f for f in os.listdir(folder)
+        if f.lower().endswith('.pdf') and not f.startswith('.')
+        and os.path.isfile(os.path.join(folder, f))
+    )
+    if root_files:
+        result.append({'group': '', 'files': root_files})
+    for subdir in sorted(
+        d for d in os.listdir(folder)
+        if os.path.isdir(os.path.join(folder, d)) and not d.startswith('.')
+    ):
+        sub_files = sorted(
+            f'{subdir}/{f}' for f in os.listdir(os.path.join(folder, subdir))
+            if f.lower().endswith('.pdf') and not f.startswith('.')
+        )
+        if sub_files:
+            result.append({'group': subdir, 'files': sub_files})
+    return result
 
 
-def load_prefills(folder, pdf_field_names):
+def load_prefills_grouped(folder, pdf_field_names):
+    """Keys are relative paths ('file.pdf' or 'subdir/file.pdf')."""
     out = {}
-    for fname in list_pdfs(folder):
-        meta = get_fields_with_meta(os.path.join(folder, fname))
-        out[fname] = {k: meta.get(k, {}).get('value', '') for k in pdf_field_names}
+    for entry in list_pdfs_grouped(folder):
+        for rel_path in entry['files']:
+            meta = get_fields_with_meta(os.path.join(folder, rel_path))
+            out[rel_path] = {k: meta.get(k, {}).get('value', '') for k in pdf_field_names}
     return out
 
 
-rsst_prefills = load_prefills(RSST_DIR, list(RSST_MAP.values()))
-req_prefills  = load_prefills(REQ_DIR,  list(REQ_MAP.values()))
+rsst_prefills = load_prefills_grouped(RSST_DIR, list(RSST_MAP.values()))
+req_prefills  = load_prefills_grouped(REQ_DIR,  list(REQ_MAP.values()))
 
 
 @app.route('/assets/<path:filename>')
@@ -70,12 +93,12 @@ def serve_asset(filename):
 
 @app.route('/')
 def sheet():
+    rsst_groups = list_pdfs_grouped(RSST_DIR)
+    req_groups  = list_pdfs_grouped(REQ_DIR)
     return render_template(
         'sheet.html',
-        rsst_files=list_pdfs(RSST_DIR),
-        req_files=list_pdfs(REQ_DIR),
-        rsst_files_json=json.dumps(list_pdfs(RSST_DIR)),
-        req_files_json=json.dumps(list_pdfs(REQ_DIR)),
+        rsst_groups_json=json.dumps(rsst_groups),
+        req_groups_json=json.dumps(req_groups),
         rsst_prefills_json=json.dumps(rsst_prefills),
         req_prefills_json=json.dumps(req_prefills),
     )
@@ -95,7 +118,6 @@ def generate():
     req_forms     = data.get('req_forms', [])
     folder_name   = (data.get('folder_name') or rsst_name).strip()
 
-    # Create output folder on Desktop
     out_dir = os.path.join(DESKTOP, folder_name)
     os.makedirs(out_dir, exist_ok=True)
     seen = set()
@@ -116,7 +138,7 @@ def generate():
     # ── Req PDFs ──────────────────────────────────────────────────────────
     for req in req_forms:
         template = req.get('template', '')
-        name     = (req.get('name') or 'Req').strip()
+        name     = os.path.basename((req.get('name') or 'Req').strip())
         if not template:
             continue
         req_path = os.path.join(REQ_DIR, template)
