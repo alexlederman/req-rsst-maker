@@ -1552,7 +1552,7 @@ function validateForm() {
 async function generateAll() {
   const rsstTmpl   = getRsstTmpl();
   const initials   = getRsstVal('subject_initials').trim();
-  const rsstBase   = rsstTmpl.replace(/\.pdf$/i, '') || 'RSST';
+  const rsstBase   = rsstTmpl.split('/').pop().replace(/\.pdf$/i, '') || 'RSST';
   const rsstName   = initials ? `${rsstBase} ${initials}` : rsstBase;
 
 

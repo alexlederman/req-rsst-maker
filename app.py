@@ -142,7 +142,7 @@ def generate():
     _now          = datetime.now()
     today         = f"{_now.month}/{_now.day}/{_now.strftime('%y')}"
     rsst_template = data.get('rsst_template', '')
-    rsst_name     = (data.get('rsst_name') or 'RSST').strip()
+    rsst_name     = os.path.basename((data.get('rsst_name') or 'RSST').strip())
     rsst_fields   = data.get('rsst_fields', {})
     req_forms     = data.get('req_forms', [])
 
