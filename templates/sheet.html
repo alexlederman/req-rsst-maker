@@ -1392,6 +1392,15 @@ function addReqCard(defaultTmpl) {
   });
   if (defaultTmpl) document.getElementById(tmplDropId).dataset.value = defaultTmpl;
 
+  // Pre-fill patient identifier if a patient is already selected
+  if (selectedPatientId) {
+    const patient = patients.find(p => p.id === selectedPatientId);
+    if (patient) {
+      const ta = document.getElementById(`pid-${cid}`);
+      if (ta) { ta.value = patient.identifier; fitTextarea(ta); }
+    }
+  }
+
   updateReqTemplateOptions();
   if (defaultTmpl) onReqTmpl(cid);
 }
